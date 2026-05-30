@@ -1,0 +1,6 @@
+{
+  "app": "node bin/app.ts",
+  "context": {
+    "budgetEmail": "bb42392@gmail.com"
+  }
+}

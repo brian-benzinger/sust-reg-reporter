@@ -6,17 +6,22 @@
   "license": "MIT",
   "type": "module",
   "workspaces": [
-    "core"
+    "core",
+    "infra"
   ],
   "scripts": {
     "test": "vitest run --coverage",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc -p core/tsconfig.json && tsc -p infra/tsconfig.json",
+    "synth": "npm run synth -w @sust-reg/infra"
   },
   "engines": {
     "node": ">=22.18"
   },
   "devDependencies": {
+    "@types/node": "^25.9.1",
     "@vitest/coverage-v8": "^4.1.7",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.7"
   }
 }
