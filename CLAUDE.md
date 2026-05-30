@@ -48,11 +48,16 @@ recorded decision:
 
 ```
 adr/        # Architecture Decision Records — the design of record
+core/       # Pure, dependency-free domain logic shared across workspaces (ADR-0018)
 ingest/     # Snapshotting pipeline: ingestor + differ Lambdas, source adapters
 api/        # Thin interactive API: as-of slider, scope checker, diff view
 web/        # Statically generated website (primary human surface)
 infra/      # AWS CDK infrastructure as code
 ```
+
+`core` is pure domain logic (status states, applicability engine, citation
+contract) with no I/O, no AWS, and no framework. It runs and tests with Node's
+native TypeScript type-stripping — `npm test` needs no install.
 
 These are monorepo workspaces, not separate repos. Keep cross-cutting types and
 tooling shared rather than duplicated.
