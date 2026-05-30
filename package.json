@@ -1,0 +1,17 @@
+{
+  "name": "sust-reg-reporter",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Version-tracked climate disclosure regulations with point-in-time history, sourced citations, and per-company applicability.",
+  "license": "MIT",
+  "type": "module",
+  "workspaces": [
+    "core"
+  ],
+  "scripts": {
+    "test": "npm test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}

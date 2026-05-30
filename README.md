@@ -49,10 +49,24 @@ the `sust-reg-` prefix that signals its domain.
 ```
 sust-reg-reporter/
 ├── adr/        # Architecture Decision Records (the design of record)
+├── core/       # Pure, dependency-free domain logic shared across workspaces
 ├── ingest/     # Snapshotting pipeline: ingestor + differ Lambdas, source adapters
 ├── api/        # Thin interactive API (as-of slider, scope checker, diff view)
 ├── web/        # Statically generated website (primary human surface)
 └── infra/      # AWS CDK infrastructure as code
+```
+
+### Implementation status
+
+The first slice of business logic is in [`core/`](core/) ([ADR-0018](adr/0018-shared-core-domain-workspace.md)):
+the explicit **regulation status states** ([ADR-0006](adr/0006-explicit-regulation-status-states.md))
+and the **applicability engine** ([ADR-0005](adr/0005-applicability-engine.md)),
+with California SB 253/261 seed data and unit tests. It is pure (no I/O, no AWS,
+no framework) and runs with Node's native TypeScript support — no build step,
+no dependencies:
+
+```sh
+npm test
 ```
 
 ## v1 scope
