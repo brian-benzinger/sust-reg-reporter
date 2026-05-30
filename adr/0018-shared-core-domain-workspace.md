@@ -1,6 +1,6 @@
 # 0018 — Shared `core` workspace for cross-cutting domain logic
 
-- **Status:** Accepted
+- **Status:** Accepted (testing-tooling sub-decision superseded by [ADR-0019](0019-vitest-testing-and-coverage.md); the `core` workspace and its zero-runtime-dependency principle stand)
 - **Date:** 2026-05-30
 
 ## Context
