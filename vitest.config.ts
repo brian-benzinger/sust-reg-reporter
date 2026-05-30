@@ -14,7 +14,8 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       // Add each workspace's source as it gains testable code.
-      include: ["core/src/**/*.ts"],
+      // Infra CDK app entrypoint (bin/) is excluded — it is glue, not logic.
+      include: ["core/src/**/*.ts", "infra/lib/**/*.ts"],
       reporter: ["text", "html"],
       thresholds: {
         perFile: true,
