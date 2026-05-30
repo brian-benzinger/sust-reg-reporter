@@ -47,4 +47,5 @@ product itself is built on.
 | [0015](0015-cdk-for-infrastructure.md) | CDK for infrastructure as code | Accepted |
 | [0016](0016-aws-always-free-cost-discipline.md) | AWS Always-Free architecture and cost discipline | Accepted |
 | [0017](0017-reliability-and-quality-layer.md) | Reliability and quality layer as the core contribution | Accepted |
-| [0018](0018-shared-core-domain-workspace.md) | Shared `core` workspace for cross-cutting domain logic | Accepted |
+| [0018](0018-shared-core-domain-workspace.md) | Shared `core` workspace for cross-cutting domain logic | Accepted (test tooling superseded by 0019) |
+| [0019](0019-vitest-testing-and-coverage.md) | Vitest for testing and per-file coverage enforcement | Accepted |

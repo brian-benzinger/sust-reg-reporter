@@ -1,5 +1,4 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
+import { describe, it, expect } from "vitest";
 import {
   applicableObligations,
   evaluateApplicability,
@@ -23,8 +22,8 @@ describe("applicability engine (ADR-0005)", () => {
     const results = evaluateApplicability(profile(), CALIFORNIA_OBLIGATIONS);
     const byId = new Map(results.map((r) => [r.obligation.id, r]));
 
-    assert.equal(byId.get("ca-sb261-climate-risk-report")?.applies, true);
-    assert.equal(byId.get("ca-sb253-ghg-disclosure")?.applies, false);
+    expect(byId.get("ca-sb261-climate-risk-report")?.applies).toBe(true);
+    expect(byId.get("ca-sb253-ghg-disclosure")?.applies).toBe(false);
   });
 
   it("applies both regimes above the $1B threshold", () => {
@@ -32,10 +31,10 @@ describe("applicability engine (ADR-0005)", () => {
       profile({ totalAnnualRevenueUSD: 2_000_000_000 }),
       CALIFORNIA_OBLIGATIONS,
     );
-    assert.deepEqual(
-      applicable.map((r) => r.obligation.id).sort(),
-      ["ca-sb253-ghg-disclosure", "ca-sb261-climate-risk-report"],
-    );
+    expect(applicable.map((r) => r.obligation.id).sort()).toEqual([
+      "ca-sb253-ghg-disclosure",
+      "ca-sb261-climate-risk-report",
+    ]);
   });
 
   it("does not apply when the company does not operate in California", () => {
@@ -43,12 +42,12 @@ describe("applicability engine (ADR-0005)", () => {
       profile({ jurisdictions: ["US", "EU"] }),
       CALIFORNIA_OBLIGATIONS,
     );
-    assert.equal(applicable.length, 0);
+    expect(applicable.length).toBe(0);
   });
 
   it("carries the first reporting deadline through when it applies", () => {
     const result = evaluateObligation(profile(), SB_261);
-    assert.equal(result.dueBy, "2026-01-01");
+    expect(result.dueBy).toBe("2026-01-01");
   });
 
   it("omits the deadline when the obligation does not apply", () => {
@@ -56,20 +55,14 @@ describe("applicability engine (ADR-0005)", () => {
       profile({ totalAnnualRevenueUSD: 100_000_000 }),
       SB_261,
     );
-    assert.equal(result.applies, false);
-    assert.equal(result.dueBy, undefined);
+    expect(result.applies).toBe(false);
+    expect(result.dueBy).toBeUndefined();
   });
 
   it("records a factual reason for every criterion checked", () => {
     const result = evaluateObligation(profile(), SB_261);
-    assert.ok(
-      result.reasons.some((r) => r.includes("≥")),
-      "expected a revenue comparison reason",
-    );
-    assert.ok(
-      result.reasons.some((r) => r.includes("US-CA")),
-      "expected a jurisdiction reason",
-    );
+    expect(result.reasons.some((r) => r.includes("≥"))).toBe(true);
+    expect(result.reasons.some((r) => r.includes("US-CA"))).toBe(true);
   });
 
   describe("the SB 261 stayed-enforcement distinction (ADR-0006)", () => {
@@ -78,14 +71,14 @@ describe("applicability engine (ADR-0005)", () => {
 
     it("a stayed obligation still applies but is not enforceable", () => {
       const result = evaluateObligation(profile(), stayed);
-      assert.equal(result.applies, true);
-      assert.equal(result.enforceable, false);
+      expect(result.applies).toBe(true);
+      expect(result.enforceable).toBe(false);
     });
 
     it("an enforced obligation that applies is enforceable", () => {
       const result = evaluateObligation(profile(), enforced);
-      assert.equal(result.applies, true);
-      assert.equal(result.enforceable, true);
+      expect(result.applies).toBe(true);
+      expect(result.enforceable).toBe(true);
     });
 
     it("a stayed obligation that does NOT apply is not enforceable", () => {
@@ -93,14 +86,14 @@ describe("applicability engine (ADR-0005)", () => {
         profile({ jurisdictions: ["EU"] }),
         stayed,
       );
-      assert.equal(result.applies, false);
-      assert.equal(result.enforceable, false);
+      expect(result.applies).toBe(false);
+      expect(result.enforceable).toBe(false);
     });
   });
 
   it("seed obligations are flagged ungrounded until pinned to a snapshot", () => {
     for (const o of CALIFORNIA_OBLIGATIONS) {
-      assert.equal(o.source.snapshotHash, UNGROUNDED_SNAPSHOT_HASH);
+      expect(o.source.snapshotHash).toBe(UNGROUNDED_SNAPSHOT_HASH);
     }
   });
 });
