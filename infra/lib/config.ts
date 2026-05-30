@@ -15,8 +15,11 @@ export const BUDGET_LIMIT_USD = 1;
 /** Default notification address for the budget alarm (overridable via context). */
 export const DEFAULT_BUDGET_EMAIL = "bb42392@gmail.com";
 
-/** Default region when none is supplied — an Aurora DSQL region (ADR-0012). */
-export const DEFAULT_REGION = "us-east-1";
+/**
+ * The project's single region (ADR-0016) — us-west-2, an Aurora DSQL region
+ * (ADR-0012) and the region of the deploying account's SSO profile.
+ */
+export const DEFAULT_REGION = "us-west-2";
 
 /** Resolve the single CDK deployment environment (account + region). */
 export function appEnv(): Environment {

@@ -9,9 +9,9 @@ import {
 describe("infra config (ADR-0016)", () => {
   it("uses CDK_DEPLOY_REGION when set", () => {
     const prev = process.env.CDK_DEPLOY_REGION;
-    process.env.CDK_DEPLOY_REGION = "us-west-2";
+    process.env.CDK_DEPLOY_REGION = "eu-west-1";
     try {
-      expect(appEnv().region).toBe("us-west-2");
+      expect(appEnv().region).toBe("eu-west-1");
     } finally {
       if (prev === undefined) delete process.env.CDK_DEPLOY_REGION;
       else process.env.CDK_DEPLOY_REGION = prev;
