@@ -111,7 +111,7 @@ The senior-level signal is the unglamorous engineering, not the prompt
 - **Branch:** develop on `claude/sust-reg-tracker-brief-WYye9`. Do not push to
   `main` without explicit permission.
 - **Commits:** clear, descriptive messages.
-- **Pull requests:** do **not** open a PR unless explicitly asked.
+- **Pull requests:** always open a PR for your changes once they're pushed.
 - **Scope:** v1 is exactly three regimes — California SB 253/261, EU CSRD
   (post-Omnibus), ISSB S1/S2. Don't add regimes without a decision.
   ([ADR-0009](adr/0009-v1-scope-three-regimes.md))
