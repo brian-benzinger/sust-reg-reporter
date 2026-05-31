@@ -1,0 +1,77 @@
+/**
+ * The page manifest (ADR-0013): a deterministic list of every page the site
+ * prerenders, each as a React node plus its metadata. Pure — it builds nodes
+ * and performs no I/O, so the prerender entry (prerender.tsx) stays thin glue.
+ */
+import type { ReactNode } from "react";
+import { caRegime, type Obligation } from "@sust-reg/core";
+import { obligationView, regimeGroups } from "./model.ts";
+import { Home } from "./components/Home.tsx";
+import { ObligationPage } from "./components/ObligationPage.tsx";
+import { RegimesIndex } from "./components/RegimesIndex.tsx";
+import { ScopeCheckerPage } from "./components/ScopeCheckerPage.tsx";
+
+export interface PageSpec {
+  /** Root-relative output path, e.g. "regimes/index.html". */
+  readonly path: string;
+  readonly title: string;
+  readonly description: string;
+  readonly canonicalPath: string;
+  /** Whether the page needs the hydration bundle. */
+  readonly withClient: boolean;
+  readonly node: ReactNode;
+}
+
+/** Build the full page set for the given obligations. */
+export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
+  const groups = regimeGroups(obligations);
+
+  const pages: PageSpec[] = [
+    {
+      path: "index.html",
+      title:
+        "sust-reg-reporter — climate disclosure regulations, version-tracked",
+      description:
+        "Version-tracked climate disclosure regulations with primary-source citations, effective dates, and per-company applicability.",
+      canonicalPath: "/index.html",
+      withClient: false,
+      node: <Home groups={groups} />,
+    },
+    {
+      path: "regimes/index.html",
+      title: "Regimes — sust-reg-reporter",
+      description: "Disclosure obligations in the v1 corpus, grouped by regime.",
+      canonicalPath: "/regimes/index.html",
+      withClient: false,
+      node: <RegimesIndex groups={groups} />,
+    },
+    {
+      path: "scope-checker.html",
+      title: "Scope checker — sust-reg-reporter",
+      description:
+        "Enter a company profile to see which modeled disclosure obligations apply and by when.",
+      canonicalPath: "/scope-checker.html",
+      withClient: true,
+      node: <ScopeCheckerPage />,
+    },
+  ];
+
+  for (const obligation of obligations) {
+    const view = obligationView(obligation);
+    pages.push({
+      path: `regimes/${obligation.id}.html`,
+      title: `${view.title} — ${view.regime}`,
+      description: `${view.regime}: ${view.title}. Status: ${view.statusLabel}.`,
+      canonicalPath: view.href,
+      withClient: false,
+      node: <ObligationPage view={view} />,
+    });
+  }
+
+  return pages;
+}
+
+/** The default corpus served by the site: the v1 seed obligations (ADR-0009). */
+export function defaultCorpus(): readonly Obligation[] {
+  return caRegime.CALIFORNIA_OBLIGATIONS;
+}
