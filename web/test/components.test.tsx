@@ -10,6 +10,8 @@ import { RegimesIndex } from "../src/components/RegimesIndex.tsx";
 import { ObligationPage } from "../src/components/ObligationPage.tsx";
 import { ScopeCheckerPage } from "../src/components/ScopeCheckerPage.tsx";
 import { AsOfSliderPage } from "../src/components/AsOfSliderPage.tsx";
+import { StatusStatesPage } from "../src/components/StatusStatesPage.tsx";
+import { MethodologyPage } from "../src/components/MethodologyPage.tsx";
 
 const full: Obligation = {
   id: "full-ob",
@@ -48,6 +50,9 @@ describe("Layout", () => {
     expect(html).toContain('src="/app.js"');
     expect(html).toContain(NOT_LEGAL_ADVICE);
     expect(html).toContain("<p>body-here</p>");
+    // Reference pages are reachable from the footer on every page.
+    expect(html).toContain('href="/status-states.html"');
+    expect(html).toContain('href="/methodology.html"');
   });
 
   it("omits optional head tags and the script by default", () => {
@@ -132,5 +137,32 @@ describe("AsOfSliderPage (static prerender)", () => {
     // Default seed histories include the two California obligations.
     expect(html).toContain("Climate-related financial risk report");
     expect(html).toContain('type="range"');
+  });
+});
+
+describe("StatusStatesPage", () => {
+  it("documents every status with the law/enforcement matrix", () => {
+    const html = renderToStaticMarkup(<StatusStatesPage />);
+    expect(html).toContain("Regulation status states");
+    // All four explicit states are present (ADR-0006).
+    for (const label of ["Proposed", "In effect", "Enforced", "Stayed"]) {
+      expect(html).toContain(label);
+    }
+    // The matrix covers both Yes and No on each axis (proposed is not law;
+    // only enforced is currently enforced).
+    expect(html).toContain("<td>Yes</td>");
+    expect(html).toContain("<td>No</td>");
+    expect(html).toContain("SB 261");
+  });
+});
+
+describe("MethodologyPage", () => {
+  it("explains grounding, history, and the non-interpretive scope", () => {
+    const html = renderToStaticMarkup(<MethodologyPage />);
+    expect(html).toContain("Methodology");
+    expect(html).toContain("Citation integrity");
+    expect(html).toContain("ungrounded seed data");
+    expect(html).toContain('href="/as-of.html"');
+    expect(html).toContain('href="/status-states.html"');
   });
 });
