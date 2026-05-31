@@ -7,8 +7,8 @@
 
 The system puts an LLM in a loop (diffing, structuring). An LLM is
 nondeterministic, costs per call, and is wrong some percentage of the time. A
-thin API wrapper around a model gets cloned in a weekend; the durable,
-senior-level signal is the *unglamorous* engineering around the model, not the
+thin API wrapper around a model gets cloned in a weekend; the durable
+contribution is the *unglamorous* engineering around the model, not the
 prompt.
 
 ## Decision
