@@ -61,11 +61,14 @@ export class PipelineStack extends cdk.Stack {
       resources: [dsqlClusterArn],
     });
 
+    // No reservedConcurrentExecutions: a new account's concurrency floor (the
+    // unreserved pool must stay >= 10) rejects reserving any. Idempotency comes
+    // from the content-hash gate and idempotency keys (ADR-0007, ADR-0011), not
+    // from serialized concurrency.
     const common = {
       runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64,
       handler: "handler",
-      reservedConcurrentExecutions: 1,
       bundling: { minify: true },
     } as const;
 
