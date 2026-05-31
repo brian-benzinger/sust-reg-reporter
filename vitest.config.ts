@@ -19,10 +19,12 @@ export default defineConfig({
       include: [
         "core/src/**/*.ts",
         "infra/lib/**/*.ts",
+        "ingest/src/**/*.ts",
         "web/src/**/*.{ts,tsx}",
       ],
       exclude: [
         ...coverageConfigDefaults.exclude,
+        "ingest/src/handlers/**",
         "web/src/client.tsx",
         "web/src/prerender.tsx",
       ],

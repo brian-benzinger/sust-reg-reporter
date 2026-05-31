@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { CostStack } from "../lib/cost-stack.ts";
 import { DataStack } from "../lib/data-stack.ts";
+import { PipelineStack } from "../lib/pipeline-stack.ts";
 import {
   LogRetentionAspect,
   NoCostlyNetworkingAspect,
@@ -30,6 +31,14 @@ new DataStack(app, "SustReg-Data", {
   env,
   description:
     "sust-reg-reporter content-addressed immutable snapshot store (ADR-0011); Aurora DSQL added next.",
+});
+
+// Ingest pipeline (ADR-0010): scheduled ingestor + differ Lambdas. Stateless;
+// consumes the DataStack handles (bucket, DSQL) via SSM.
+new PipelineStack(app, "SustReg-Pipeline", {
+  env,
+  description:
+    "sust-reg-reporter ingest pipeline: EventBridge-scheduled ingestor + differ Lambdas (ADR-0010).",
 });
 
 // Cost-discipline guardrails, enforced at synth time (ADR-0016, ADR-0014).
