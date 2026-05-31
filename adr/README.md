@@ -49,4 +49,5 @@ product itself is built on.
 | [0017](0017-reliability-and-quality-layer.md) | Reliability and quality layer as the core contribution | Accepted |
 | [0018](0018-shared-core-domain-workspace.md) | Shared `core` workspace for cross-cutting domain logic | Accepted (test tooling superseded by 0019) |
 | [0019](0019-vitest-testing-and-coverage.md) | Vitest for testing and per-file coverage enforcement | Accepted |
-| [0020](0020-zero-dependency-static-site-generator.md) | Zero-dependency TypeScript static site generator for the web | Accepted |
+| [0020](0020-zero-dependency-static-site-generator.md) | Zero-dependency TypeScript static site generator for the web | Superseded by 0021 |
+| [0021](0021-react-typescript-webpack-web-app.md) | React + TypeScript + webpack for the web application | Accepted |

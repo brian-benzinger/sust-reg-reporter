@@ -78,24 +78,26 @@ runtime dependencies.
 - Cost-discipline **guardrail Aspects** fail `cdk synth` on a NAT Gateway, a
   VPC, API Gateway, an ALB, an unbounded log group, or a stray region.
 
-**Web** — the static-generation foundation in [`web/`](web/)
+**Web** — the React + TypeScript app in [`web/`](web/)
 ([ADR-0013](adr/0013-static-generation-thin-api.md),
-[ADR-0020](adr/0020-zero-dependency-static-site-generator.md)): a
-zero-runtime-dependency TypeScript generator that renders the corpus from
-`core` into plain static HTML — a landing page, a regimes index, and a page per
-obligation, each carrying its status, applicability criteria, first reporting
-deadline, and a grounded/ungrounded citation flag. Page logic is pure and held
-to the same per-file coverage gate; the build entrypoint is thin I/O glue.
+[ADR-0021](adr/0021-react-typescript-webpack-web-app.md)): React components
+rendered from the `core` corpus, **prerendered to static HTML** with webpack so
+pages stay indexable and Always-Free to host. It ships a landing page, a regimes
+index, a page per obligation (status, applicability criteria, first reporting
+deadline, grounded/ungrounded citation flag), and the first interactive
+feature — a **client-side Scope Checker** that runs the shared applicability
+engine in the browser and hydrates over the prerendered markup. View-model and
+scope-check logic are pure and held to the same per-file coverage gate; the
+webpack config and the client/prerender entry points are glue.
 
 Still to come: Aurora DSQL, the ingest/differ pipeline, the thin interactive API
-(as-of slider, scope checker, diff view), and the web↔pipeline regeneration
-hook.
+(as-of slider, diff view), and the web↔pipeline regeneration hook.
 
 ```sh
 npm test                            # unit tests + per-file coverage gate
 npm run typecheck                   # tsc over core + infra + web
 npm run synth -w @sust-reg/infra    # synthesize the CloudFormation templates
-npm run build:web                   # generate the static site into web/dist/
+npm run build:web                   # prerender the site + bundle into web/dist/
 ```
 
 ## v1 scope

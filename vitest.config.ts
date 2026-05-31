@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { coverageConfigDefaults, defineConfig } from "vitest/config";
 
 /**
  * Test + coverage configuration for the monorepo (ADR-0019).
@@ -10,13 +10,22 @@ import { defineConfig } from "vitest/config";
  */
 export default defineConfig({
   test: {
-    include: ["**/test/**/*.test.ts"],
+    include: ["**/test/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
-      // Add each workspace's source as it gains testable code.
-      // Entrypoints that are pure I/O glue (infra/bin, web/bin) are excluded —
-      // they are glue, not logic.
-      include: ["core/src/**/*.ts", "infra/lib/**/*.ts", "web/src/**/*.ts"],
+      // Add each workspace's source as it gains testable code. Entrypoints that
+      // are pure glue — the CDK app (infra/bin) and the web client/prerender
+      // entries — are excluded; they are wiring, not logic.
+      include: [
+        "core/src/**/*.ts",
+        "infra/lib/**/*.ts",
+        "web/src/**/*.{ts,tsx}",
+      ],
+      exclude: [
+        ...coverageConfigDefaults.exclude,
+        "web/src/client.tsx",
+        "web/src/prerender.tsx",
+      ],
       reporter: ["text", "html"],
       thresholds: {
         perFile: true,
