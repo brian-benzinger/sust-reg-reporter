@@ -97,3 +97,25 @@ describe("SingleRegionAspect (ADR-0016)", () => {
     Annotations.fromStack(stack).hasNoError("*", Match.anyValue());
   });
 });
+
+describe("NoCostlyNetworkingAspect — API Gateway (ADR-0023)", () => {
+  it("allows an HTTP API but still forbids a REST API", () => {
+    const app = new cdk.App();
+
+    const httpStack = new cdk.Stack(app, "Http", { env: WEST });
+    new cdk.aws_apigatewayv2.CfnApi(httpStack, "Api", {
+      name: "x",
+      protocolType: "HTTP",
+    });
+    cdk.Aspects.of(httpStack).add(new NoCostlyNetworkingAspect());
+    Annotations.fromStack(httpStack).hasNoError("*", Match.anyValue());
+
+    const restStack = new cdk.Stack(app, "Rest", { env: WEST });
+    new cdk.aws_apigateway.CfnRestApi(restStack, "Rest", { name: "x" });
+    cdk.Aspects.of(restStack).add(new NoCostlyNetworkingAspect());
+    Annotations.fromStack(restStack).hasError(
+      "*",
+      Match.stringLikeRegexp("RestApi"),
+    );
+  });
+});

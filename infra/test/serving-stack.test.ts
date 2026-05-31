@@ -9,7 +9,7 @@ const stack = new ServingStack(app, "TestServing", {
 });
 const t = Template.fromStack(stack);
 
-describe("ServingStack (ADR-0013, ADR-0014)", () => {
+describe("ServingStack (ADR-0013, ADR-0023)", () => {
   it("serves a private web bucket (all public access blocked)", () => {
     t.hasResourceProperties("AWS::S3::Bucket", {
       PublicAccessBlockConfiguration: {
@@ -21,8 +21,19 @@ describe("ServingStack (ADR-0013, ADR-0014)", () => {
     });
   });
 
-  it("exposes the API via an IAM-authed Function URL on an ARM64 Node 22 Lambda", () => {
-    t.hasResourceProperties("AWS::Lambda::Url", { AuthType: "AWS_IAM" });
+  it("exposes the API via a throttled HTTP API, not a public Lambda URL", () => {
+    t.resourceCountIs("AWS::Lambda::Url", 0);
+    t.hasResourceProperties("AWS::ApiGatewayV2::Api", { ProtocolType: "HTTP" });
+    t.hasResourceProperties("AWS::ApiGatewayV2::Stage", {
+      StageName: "$default",
+      DefaultRouteSettings: Match.objectLike({
+        ThrottlingRateLimit: 50,
+        ThrottlingBurstLimit: 100,
+      }),
+    });
+  });
+
+  it("runs the api Lambda as ARM64 Node 22", () => {
     t.hasResourceProperties("AWS::Lambda::Function", {
       Runtime: "nodejs22.x",
       Architectures: ["arm64"],

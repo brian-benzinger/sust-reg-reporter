@@ -2,6 +2,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as cdk from "aws-cdk-lib";
 import {
+  aws_apigatewayv2 as apigw,
+  aws_apigatewayv2_integrations as apigwint,
   aws_cloudfront as cloudfront,
   aws_cloudfront_origins as origins,
   aws_lambda as lambda,
@@ -21,11 +23,15 @@ const API_HANDLER = join(
 );
 
 /**
- * Serving layer (ADR-0013, ADR-0014): a single CloudFront distribution fronting
- * both the statically generated web site (default behavior, S3 origin via OAC)
- * and the thin interactive API (`/api/*`, a Lambda Function URL origin via OAC
- * SigV4). CloudFront egress is Always-Free; reads are served statically and the
- * API is reserved for the three interactive features (ADR-0016).
+ * Serving layer (ADR-0013, ADR-0023): a single CloudFront distribution fronting
+ * both the statically generated web site (default behavior, private S3 via OAC)
+ * and the thin interactive API (`/api/*`).
+ *
+ * The API is an API Gateway HTTP API integrated to the API Lambda: the Lambda is
+ * never publicly exposed (only API Gateway may invoke it), and the HTTP API's
+ * default stage is throttled so the public endpoint cannot run up cost
+ * (ADR-0023, ADR-0016). Reads are served statically; the API is reserved for the
+ * three interactive features.
  *
  * The web bucket is private — reachable only through CloudFront. Site content is
  * published with `aws s3 sync` after deploy, kept out of CDK so there is no
@@ -47,8 +53,8 @@ export class ServingStack extends cdk.Stack {
     });
     this.webBucket = webBucket;
 
-    // Thin API Lambda (stub router) behind a Function URL, IAM-authed so only
-    // CloudFront (via OAC SigV4) can reach it.
+    // Thin API Lambda (stub router). No Function URL — only API Gateway invokes
+    // it (ADR-0023).
     const apiFn = new NodejsFunction(this, "ApiFn", {
       entry: API_HANDLER,
       handler: "handler",
@@ -62,13 +68,27 @@ export class ServingStack extends cdk.Stack {
       }),
       bundling: { minify: true },
     });
-    const apiUrl = apiFn.addFunctionUrl({
-      authType: lambda.FunctionUrlAuthType.AWS_IAM,
-      invokeMode: lambda.InvokeMode.BUFFERED,
+
+    // API Gateway HTTP API -> Lambda, with a throttled default stage so the
+    // public endpoint cannot run up cost (ADR-0023, ADR-0016).
+    const httpApi = new apigw.HttpApi(this, "HttpApi", {
+      apiName: "sust-reg-api",
+      createDefaultStage: false,
+      defaultIntegration: new apigwint.HttpLambdaIntegration(
+        "ApiIntegration",
+        apiFn,
+      ),
     });
+    new apigw.HttpStage(this, "DefaultStage", {
+      httpApi,
+      stageName: "$default",
+      autoDeploy: true,
+      throttle: { rateLimit: 50, burstLimit: 100 },
+    });
+    const apiDomain = `${httpApi.apiId}.execute-api.${this.region}.amazonaws.com`;
 
     const distribution = new cloudfront.Distribution(this, "Distribution", {
-      comment: "sust-reg-reporter site + /api/* (ADR-0013, ADR-0014)",
+      comment: "sust-reg-reporter site + /api/* (ADR-0013, ADR-0023)",
       defaultRootObject: "index.html",
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       defaultBehavior: {
@@ -77,10 +97,10 @@ export class ServingStack extends cdk.Stack {
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
       },
       additionalBehaviors: {
-        // The thin API: never cached, all methods, no host header to the
-        // Function URL origin (required for Function URL OAC).
+        // The thin API: never cached, all methods, and no viewer Host header to
+        // the API Gateway origin (which validates Host against its own domain).
         "/api/*": {
-          origin: origins.FunctionUrlOrigin.withOriginAccessControl(apiUrl),
+          origin: new origins.HttpOrigin(apiDomain),
           viewerProtocolPolicy:
             cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
@@ -95,6 +115,10 @@ export class ServingStack extends cdk.Stack {
     new cdk.CfnOutput(this, "WebBucketName", {
       value: webBucket.bucketName,
       description: "Private static-site bucket; sync the web build here.",
+    });
+    new cdk.CfnOutput(this, "ApiEndpoint", {
+      value: httpApi.apiEndpoint,
+      description: "API Gateway HTTP API endpoint (throttled) — ADR-0023.",
     });
     new cdk.CfnOutput(this, "DistributionUrl", {
       value: `https://${distribution.distributionDomainName}`,

@@ -43,7 +43,7 @@ product itself is built on.
 | [0011](0011-content-addressed-snapshot-store.md) | Content-addressed S3 snapshot store | Accepted |
 | [0012](0012-aurora-dsql-data-store.md) | Aurora DSQL as the primary data store | Accepted |
 | [0013](0013-static-generation-thin-api.md) | Static generation with a thin interactive API | Accepted |
-| [0014](0014-lambda-function-urls-over-api-gateway.md) | Lambda Function URLs behind CloudFront over API Gateway | Accepted |
+| [0014](0014-lambda-function-urls-over-api-gateway.md) | Lambda Function URLs behind CloudFront over API Gateway | Superseded by 0023 |
 | [0015](0015-cdk-for-infrastructure.md) | CDK for infrastructure as code | Accepted |
 | [0016](0016-aws-always-free-cost-discipline.md) | AWS Always-Free architecture and cost discipline | Accepted |
 | [0017](0017-reliability-and-quality-layer.md) | Reliability and quality layer as the core contribution | Accepted |
@@ -52,3 +52,4 @@ product itself is built on.
 | [0020](0020-zero-dependency-static-site-generator.md) | Zero-dependency TypeScript static site generator for the web | Superseded by 0021 |
 | [0021](0021-react-typescript-webpack-web-app.md) | React + TypeScript + webpack for the web application | Accepted |
 | [0022](0022-in-code-bitemporal-representation.md) | In-code bitemporal representation and as-of resolution | Accepted |
+| [0023](0023-api-gateway-http-api.md) | API Gateway HTTP API for the thin API | Accepted |
