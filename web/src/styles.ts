@@ -171,4 +171,23 @@ form.scope select {
 .result .verdict.no { color: var(--muted); }
 .result ul.reasons { margin: 0.4rem 0 0; padding-left: 1.25rem; font-size: 0.92rem; }
 .result .due { font-size: 0.9rem; color: var(--muted); }
+
+.asof-controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 1rem 0 1.5rem;
+}
+.asof-controls label { display: block; font-weight: 600; }
+.asof-controls input[type="range"] { width: 100%; margin-top: 0.4rem; }
+
+table.asof-table { border-collapse: collapse; width: 100%; }
+table.asof-table th,
+table.asof-table td {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+table.asof-table th { color: var(--muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.muted { color: var(--muted); }
 `;

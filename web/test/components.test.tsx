@@ -9,6 +9,7 @@ import { Home } from "../src/components/Home.tsx";
 import { RegimesIndex } from "../src/components/RegimesIndex.tsx";
 import { ObligationPage } from "../src/components/ObligationPage.tsx";
 import { ScopeCheckerPage } from "../src/components/ScopeCheckerPage.tsx";
+import { AsOfSliderPage } from "../src/components/AsOfSliderPage.tsx";
 
 const full: Obligation = {
   id: "full-ob",
@@ -120,5 +121,16 @@ describe("ScopeCheckerPage (static prerender)", () => {
     // Default corpus: SB 261 applies at the default $750M profile.
     expect(html).toContain("obligation(s) apply");
     expect(html).toContain("Climate-related financial risk report");
+  });
+});
+
+describe("AsOfSliderPage (static prerender)", () => {
+  it("renders the heading, mount node, and the default-history table", () => {
+    const html = renderToStaticMarkup(<AsOfSliderPage />);
+    expect(html).toContain("As-of-date slider");
+    expect(html).toContain('id="as-of-slider-root"');
+    // Default seed histories include the two California obligations.
+    expect(html).toContain("Climate-related financial risk report");
+    expect(html).toContain('type="range"');
   });
 });

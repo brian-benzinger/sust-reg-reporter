@@ -39,9 +39,11 @@ export function Home(props: {
           profile, see which obligations apply and by when.
         </li>
         <li>
-          <strong>As-of-date slider</strong> &mdash; the bitemporal model made
-          visible: what was in effect, and what we believed was in effect, on
-          any date. <span className="soon">(coming soon)</span>
+          <strong>
+            <a href="/as-of.html">As-of-date slider</a>
+          </strong>{" "}
+          &mdash; the bitemporal model made visible: what was in effect, and
+          what we believed was in effect, on any date.
         </li>
         <li>
           <strong>Diff view</strong> &mdash; change detection made visible:

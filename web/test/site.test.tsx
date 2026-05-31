@@ -6,18 +6,20 @@ describe("buildPages (ADR-0013)", () => {
   const pages = buildPages(defaultCorpus());
   const byPath = new Map(pages.map((p) => [p.path, p]));
 
-  it("emits home, regimes index, scope checker, and a page per obligation", () => {
+  it("emits home, regimes index, the interactive pages, and a page per obligation", () => {
     expect(byPath.has("index.html")).toBe(true);
     expect(byPath.has("regimes/index.html")).toBe(true);
     expect(byPath.has("scope-checker.html")).toBe(true);
+    expect(byPath.has("as-of.html")).toBe(true);
     for (const o of caRegime.CALIFORNIA_OBLIGATIONS) {
       expect(byPath.has(`regimes/${o.id}.html`)).toBe(true);
     }
-    expect(pages).toHaveLength(3 + caRegime.CALIFORNIA_OBLIGATIONS.length);
+    expect(pages).toHaveLength(4 + caRegime.CALIFORNIA_OBLIGATIONS.length);
   });
 
-  it("flags only the scope checker as needing the hydration bundle", () => {
+  it("flags the interactive pages as needing the hydration bundle", () => {
     expect(byPath.get("scope-checker.html")?.withClient).toBe(true);
+    expect(byPath.get("as-of.html")?.withClient).toBe(true);
     expect(byPath.get("index.html")?.withClient).toBe(false);
     expect(byPath.get("regimes/index.html")?.withClient).toBe(false);
   });
