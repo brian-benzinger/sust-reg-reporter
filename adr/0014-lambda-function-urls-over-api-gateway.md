@@ -1,6 +1,6 @@
 # 0014 — Lambda Function URLs behind CloudFront over API Gateway
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0023](0023-api-gateway-http-api.md)
 - **Date:** 2026-05-30
 
 ## Context

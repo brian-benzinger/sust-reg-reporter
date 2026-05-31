@@ -18,9 +18,7 @@ const FORBIDDEN: Record<string, string> = {
     "nothing should be VPC-bound; DSQL and S3 are reached over public TLS",
   "AWS::EC2::EIP": "an Elastic IP implies a NAT/VPC egress path",
   "AWS::ApiGateway::RestApi":
-    "serve the API via CloudFront + Lambda Function URLs, not API Gateway",
-  "AWS::ApiGatewayV2::Api":
-    "serve the API via CloudFront + Lambda Function URLs, not API Gateway",
+    "use the cheaper API Gateway HTTP API, not REST API (ADR-0023)",
   "AWS::ElasticLoadBalancingV2::LoadBalancer":
     "an ALB carries an hourly charge",
 };
