@@ -51,3 +51,4 @@ product itself is built on.
 | [0019](0019-vitest-testing-and-coverage.md) | Vitest for testing and per-file coverage enforcement | Accepted |
 | [0020](0020-zero-dependency-static-site-generator.md) | Zero-dependency TypeScript static site generator for the web | Superseded by 0021 |
 | [0021](0021-react-typescript-webpack-web-app.md) | React + TypeScript + webpack for the web application | Accepted |
+| [0022](0022-in-code-bitemporal-representation.md) | In-code bitemporal representation and as-of resolution | Accepted |
