@@ -8,9 +8,11 @@ import { caRegime, type Obligation } from "@sust-reg/core";
 import { obligationView, regimeGroups } from "./model.ts";
 import { AsOfSliderPage } from "./components/AsOfSliderPage.tsx";
 import { Home } from "./components/Home.tsx";
+import { MethodologyPage } from "./components/MethodologyPage.tsx";
 import { ObligationPage } from "./components/ObligationPage.tsx";
 import { RegimesIndex } from "./components/RegimesIndex.tsx";
 import { ScopeCheckerPage } from "./components/ScopeCheckerPage.tsx";
+import { StatusStatesPage } from "./components/StatusStatesPage.tsx";
 
 export interface PageSpec {
   /** Root-relative output path, e.g. "regimes/index.html". */
@@ -63,6 +65,24 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
       canonicalPath: "/as-of.html",
       withClient: true,
       node: <AsOfSliderPage />,
+    },
+    {
+      path: "status-states.html",
+      title: "Regulation status states — sust-reg-reporter",
+      description:
+        "What the proposed, in-effect, enforced, and stayed status states mean — and why a law can be on the books while its enforcement is paused.",
+      canonicalPath: "/status-states.html",
+      withClient: false,
+      node: <StatusStatesPage />,
+    },
+    {
+      path: "methodology.html",
+      title: "Methodology — sust-reg-reporter",
+      description:
+        "How the corpus is built and grounded: primary-source citations, point-in-time history, authoritative-source ingestion, and the limits to hold it to.",
+      canonicalPath: "/methodology.html",
+      withClient: false,
+      node: <MethodologyPage />,
     },
   ];
 

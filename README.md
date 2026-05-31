@@ -91,9 +91,11 @@ deadline, grounded/ungrounded citation flag), and two **client-side interactive
 features** that hydrate over the prerendered markup: a **Scope Checker** that
 runs the applicability engine in the browser, and an **as-of-date slider** that
 runs the bitemporal resolver to show how a status reads on a chosen valid date
-versus a chosen knowledge date. View-model, scope-check, and timeline logic are
-pure and held to the same per-file coverage gate; the webpack config and the
-client/prerender entry points are glue.
+versus a chosen knowledge date. It also carries two reference pages — a
+**status-states explainer** (ADR-0006) and a **methodology** page on citation
+grounding and non-interpretive scope (ADR-0002, ADR-0004). View-model,
+scope-check, and timeline logic are pure and held to the same per-file coverage
+gate; the webpack config and the client/prerender entry points are glue.
 
 Still to come: the ingest/differ pipeline, the **diff view** (needs `semdiff`),
 the thin interactive API for corpus-backed resolution, and the web↔pipeline
