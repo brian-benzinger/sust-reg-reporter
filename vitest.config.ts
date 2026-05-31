@@ -14,8 +14,9 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       // Add each workspace's source as it gains testable code.
-      // Infra CDK app entrypoint (bin/) is excluded — it is glue, not logic.
-      include: ["core/src/**/*.ts", "infra/lib/**/*.ts"],
+      // Entrypoints that are pure I/O glue (infra/bin, web/bin) are excluded —
+      // they are glue, not logic.
+      include: ["core/src/**/*.ts", "infra/lib/**/*.ts", "web/src/**/*.ts"],
       reporter: ["text", "html"],
       thresholds: {
         perFile: true,

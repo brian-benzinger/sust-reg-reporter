@@ -7,13 +7,15 @@
   "type": "module",
   "workspaces": [
     "core",
-    "infra"
+    "infra",
+    "web"
   ],
   "scripts": {
     "test": "vitest run --coverage",
     "test:watch": "vitest",
-    "typecheck": "tsc -p core/tsconfig.json && tsc -p infra/tsconfig.json",
-    "synth": "npm run synth -w @sust-reg/infra"
+    "typecheck": "tsc -p core/tsconfig.json && tsc -p infra/tsconfig.json && tsc -p web/tsconfig.json",
+    "synth": "npm run synth -w @sust-reg/infra",
+    "build:web": "npm run build -w @sust-reg/web"
   },
   "engines": {
     "node": ">=22.18"
