@@ -20,6 +20,7 @@ export default defineConfig({
         "core/src/**/*.ts",
         "infra/lib/**/*.ts",
         "ingest/src/**/*.ts",
+        "api/src/**/*.ts",
         "web/src/**/*.{ts,tsx}",
       ],
       exclude: [
