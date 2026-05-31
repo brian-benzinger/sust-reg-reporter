@@ -1,7 +1,14 @@
 # 0020 — Zero-dependency TypeScript static site generator for the web
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0021](0021-react-typescript-webpack-web-app.md)
 - **Date:** 2026-05-31
+
+> **Superseded.** The web workspace adopted React + TypeScript + webpack
+> ([ADR-0021](0021-react-typescript-webpack-web-app.md)) to support richer
+> client-side interactivity (the Scope Checker and the other ADR-0013 features).
+> The intent preserved here — prerendered, indexable, Always-Free-hosted static
+> output (ADR-0013, ADR-0016) — carries over; only the "no build tooling / no
+> dependencies" mechanism is replaced.
 
 ## Context
 

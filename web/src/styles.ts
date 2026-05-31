@@ -1,11 +1,12 @@
 /**
- * Static assets emitted alongside the generated HTML.
+ * The site stylesheet.
  *
- * The stylesheet is a plain string constant rather than a build-tooled asset:
- * it keeps the web workspace free of runtime/build dependencies (ADR-0020) and
- * ships as a single cacheable file behind CloudFront (ADR-0014). System fonts,
- * no external requests, and a legible high-contrast palette — the site must be
- * usable by non-developers and indexable (ADR-0013).
+ * Kept as a plain string constant that the prerender step writes to
+ * dist/styles.css, rather than imported through a CSS loader — it ships as one
+ * cacheable file behind CloudFront (ADR-0014), needs no extra webpack loaders,
+ * and is identical for the prerendered HTML and the hydrated client. System
+ * fonts, no external requests, and a legible high-contrast palette — the site
+ * must be usable by non-developers and indexable (ADR-0013).
  */
 
 /** Root-relative URL of the generated stylesheet. */
@@ -121,4 +122,53 @@ footer.site {
   padding: 1.5rem 0 2.5rem;
 }
 footer.site p { margin: 0.35rem 0; }
+
+form.scope { margin: 1rem 0 1.5rem; }
+form.scope .fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.9rem 1.25rem;
+}
+form.scope label { display: block; font-weight: 600; }
+form.scope .hint { display: block; font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+form.scope input,
+form.scope select {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: inherit;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.errors {
+  border: 1px solid var(--warn-border);
+  background: var(--warn-bg);
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  margin: 0.75rem 0;
+  color: var(--paused);
+}
+.errors ul { margin: 0.25rem 0; padding-left: 1.25rem; }
+
+.summary { color: var(--muted); margin: 0.5rem 0 1rem; }
+
+.result {
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 8px;
+  padding: 0.85rem 1.1rem;
+  margin: 0.6rem 0;
+}
+.result.applies { border-left-color: var(--accent); }
+.result.applies.enforceable { border-left-color: var(--ok); }
+.result.excluded { border-left-color: var(--border); opacity: 0.8; }
+.result h3 { margin: 0 0 0.25rem; }
+.result .verdict { font-weight: 600; }
+.result .verdict.yes { color: var(--accent); }
+.result .verdict.no { color: var(--muted); }
+.result ul.reasons { margin: 0.4rem 0 0; padding-left: 1.25rem; font-size: 0.92rem; }
+.result .due { font-size: 0.9rem; color: var(--muted); }
 `;
