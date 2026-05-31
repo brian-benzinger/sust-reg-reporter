@@ -1,0 +1,14 @@
+{
+  "name": "@sust-reg/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Statically generated website (ADR-0013): the primary human surface, generated from the shared domain corpus with zero runtime dependencies (ADR-0020).",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@sust-reg/core": "*"
+  },
+  "scripts": {
+    "build": "node bin/build.ts"
+  }
+}
