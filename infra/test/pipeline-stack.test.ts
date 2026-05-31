@@ -48,4 +48,22 @@ describe("PipelineStack (ADR-0010)", () => {
       }),
     });
   });
+
+  it("grants the differ read of the Anthropic key SecureString (ADR-0024)", () => {
+    t.hasResourceProperties("AWS::IAM::Policy", {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({ Action: "ssm:GetParameter" }),
+        ]),
+      }),
+    });
+  });
+
+  it("has NO public invoke path — the LLM analysis is async only (ADR-0007)", () => {
+    // The differ (which calls Claude via semdiff) must never be reachable on
+    // demand: no Function URL, no API Gateway anywhere in the pipeline.
+    t.resourceCountIs("AWS::Lambda::Url", 0);
+    t.resourceCountIs("AWS::ApiGatewayV2::Api", 0);
+    t.resourceCountIs("AWS::ApiGateway::RestApi", 0);
+  });
 });

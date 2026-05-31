@@ -61,6 +61,11 @@ export class PipelineStack extends cdk.Stack {
       resources: [dsqlClusterArn],
     });
 
+    // SSM SecureString holding the Anthropic API key for semdiff (ADR-0024).
+    // Created out of band — its value is never in git or the template; the
+    // differ reads and decrypts it at cold start.
+    const anthropicKeyParam = "/sust-reg/anthropic-api-key";
+
     // No reservedConcurrentExecutions: a new account's concurrency floor (the
     // unreserved pool must stay >= 10) rejects reserving any. Idempotency comes
     // from the content-hash gate and idempotency keys (ADR-0007, ADR-0011), not
@@ -69,8 +74,10 @@ export class PipelineStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64,
       handler: "handler",
-      bundling: { minify: true },
-    } as const;
+      // Keep @aws-sdk/* out of the bundle — the Node 22 Lambda runtime provides
+      // it (the differ uses @aws-sdk/client-ssm to read the key).
+      bundling: { minify: true, externalModules: ["@aws-sdk/*"] },
+    };
 
     // Differ — runs semdiff on a changed snapshot (gated by the ingestor).
     const differFn = new NodejsFunction(this, "DifferFn", {
@@ -85,10 +92,32 @@ export class PipelineStack extends cdk.Stack {
       environment: {
         SNAPSHOT_BUCKET: snapshotBucketName,
         DSQL_ENDPOINT: dsqlEndpoint,
+        ANTHROPIC_KEY_PARAM: anthropicKeyParam,
       },
     });
     snapshotBucket.grantRead(differFn);
     differFn.addToRolePolicy(dsqlConnect);
+
+    // The differ reads the Anthropic key from SSM at cold start (ADR-0024):
+    // GetParameter on that one parameter + KMS decrypt scoped to SSM. The key is
+    // granted ONLY to the differ; nothing public can reach this Lambda.
+    differFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["ssm:GetParameter"],
+        resources: [
+          `arn:aws:ssm:${this.region}:${this.account}:parameter${anthropicKeyParam}`,
+        ],
+      }),
+    );
+    differFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["kms:Decrypt"],
+        resources: ["*"],
+        conditions: {
+          StringEquals: { "kms:ViaService": `ssm.${this.region}.amazonaws.com` },
+        },
+      }),
+    );
 
     // Ingestor — scheduled poll; on a changed hash, writes a snapshot and
     // asynchronously invokes the differ.

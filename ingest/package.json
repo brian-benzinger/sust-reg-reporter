@@ -7,5 +7,8 @@
   "type": "module",
   "dependencies": {
     "semdiff": "^0.1.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-ssm": "^3.1057.0"
   }
 }

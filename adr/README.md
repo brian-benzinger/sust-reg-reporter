@@ -53,3 +53,4 @@ product itself is built on.
 | [0021](0021-react-typescript-webpack-web-app.md) | React + TypeScript + webpack for the web application | Accepted |
 | [0022](0022-in-code-bitemporal-representation.md) | In-code bitemporal representation and as-of resolution | Accepted |
 | [0023](0023-api-gateway-http-api.md) | API Gateway HTTP API for the thin API | Accepted |
+| [0024](0024-ssm-securestring-secrets.md) | SSM Parameter Store SecureString for app secrets | Accepted |
