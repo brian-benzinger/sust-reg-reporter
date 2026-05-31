@@ -3,11 +3,13 @@
 > Version-tracked climate disclosure regulations with point-in-time history,
 > sourced citations, and per-company applicability.
 
-**Status:** early implementation. The design of record ([`adr/`](adr/)) is
-complete; the shared domain logic and the first AWS infrastructure stacks are
-built, tested, and deployed. See [Implementation status](#implementation-status)
-for what exists today, and [`adr/`](adr/) for the rationale behind every
-decision.
+**Status:** the full serverless backend is **built, tested, and deployed live**
+to AWS (us-west-2), and the change-detection pipeline runs end to end. The
+`core` domain logic, the prerendered web app, the four-stack CDK infrastructure,
+and the `semdiff` integration are all in place; what remains is the connective
+tissue (source adapters, S3↔DSQL persistence) and the corpus-backed API. See
+[Implementation status](#implementation-status) for specifics, and [`adr/`](adr/)
+for the rationale behind every decision.
 
 > ⚠️ **Not legal advice.** This tool returns primary-source text, citations,
 > effective dates, and applicability metadata. It does **not** interpret
@@ -72,14 +74,27 @@ and no runtime dependencies.
 (95% line / 90% branch)**, enforced locally and in CI
 ([ADR-0019](adr/0019-vitest-testing-and-coverage.md)).
 
-**Infrastructure** — AWS CDK in [`infra/`](infra/), deployed to **us-west-2**:
+**Infrastructure** — AWS CDK in [`infra/`](infra/), all four stacks **deployed
+live to us-west-2**:
 
-- `CostStack` — the **$1 monthly budget** backstop (ADR-0016), live with
-  80% / 100% email alerts.
-- `DataStack` — the **content-addressed S3 snapshot store** (ADR-0011):
-  versioned, object-locked, private, and retained.
+- `CostStack` — the **$1 monthly budget** backstop (ADR-0016), with 80% / 100%
+  email alerts.
+- `DataStack` — the **content-addressed S3 snapshot store** (ADR-0011:
+  versioned, object-locked, private, retained) and the **Aurora DSQL** cluster
+  (ADR-0012), ACTIVE and deletion-protected.
+- `PipelineStack` — the snapshotting pipeline (ADR-0010): an EventBridge daily
+  cron → ingestor + **differ** Lambdas (the differ runs `semdiff`), an SQS DLQ,
+  and 14-day log groups.
+- `ServingStack` — one **CloudFront** distribution fronting the static site and
+  the thin API (`/api/*`) via an **API Gateway HTTP API** → Lambda (ADR-0013,
+  ADR-0023).
 - Cost-discipline **guardrail Aspects** fail `cdk synth` on a NAT Gateway, a
-  VPC, API Gateway, an ALB, an unbounded log group, or a stray region.
+  VPC, a REST API, an ALB, an unbounded log group, or a stray region.
+
+The change-detection path is wired and verified end to end:
+[`semdiff@0.1.0`](https://www.npmjs.com/package/semdiff) is integrated into the
+differ, with its Anthropic API key stored in an SSM `SecureString` (ADR-0024)
+and the differ kept strictly async — never publicly invokable (ADR-0007).
 
 **Web** — the React + TypeScript app in [`web/`](web/)
 ([ADR-0013](adr/0013-static-generation-thin-api.md),
@@ -97,9 +112,9 @@ grounding and non-interpretive scope (ADR-0002, ADR-0004). View-model,
 scope-check, and timeline logic are pure and held to the same per-file coverage
 gate; the webpack config and the client/prerender entry points are glue.
 
-Still to come: the ingest/differ pipeline, the **diff view** (needs `semdiff`),
-the thin interactive API for corpus-backed resolution, and the web↔pipeline
-regeneration hook.
+Still to come: the source adapters (ADR-0008) and the ingestor's S3 write; the
+differ reading snapshot text from S3 and persisting the `StructuredDiff` to
+DSQL; the corpus-backed API endpoints; and the web↔pipeline regeneration hook.
 
 ```sh
 npm test                            # unit tests + per-file coverage gate
@@ -196,9 +211,12 @@ interactive features that surface the engineering depth
 - a **scope checker** — the applicability engine made visible,
 - a **diff view** — change detection made visible.
 
-The API is served by **Lambda Function URLs behind CloudFront** (not API
-Gateway), because CloudFront egress is Always Free while API Gateway's free
-allowance is legacy-only ([ADR-0014](adr/0014-lambda-function-urls-over-api-gateway.md)).
+The API is served by an **API Gateway HTTP API behind CloudFront** — the Lambda
+is never publicly exposed and the endpoint is throttled
+([ADR-0023](adr/0023-api-gateway-http-api.md), which superseded the original
+Lambda Function URL approach in
+[ADR-0014](adr/0014-lambda-function-urls-over-api-gateway.md) after the
+CloudFront-to-Function-URL OAC path proved unreliable).
 
 ### Infrastructure
 
@@ -257,20 +275,25 @@ The full rationale lives in [`adr/`](adr/). Start with the
 
 ## Open questions
 
-- Verify Aurora DSQL feature support for the bitemporal model (range types,
-  exclusion constraints, foreign keys, and pgvector for semantic search).
-- Confirm which AWS account is used (a pre-July-2025 account is preferable for
-  indefinite free hosting).
+- Verify Aurora DSQL feature support for the bitemporal model in depth (range
+  types, exclusion constraints, foreign keys, and pgvector for semantic search)
+  before relying on them; the cluster is deployed and ACTIVE.
 - Confirm domain availability for the chosen names on a registrar.
 
-## Suggested build order
+## Build order — progress
 
-1. **`semdiff`** first — the dependency *and* a standalone deliverable. Build
-   the engine, the CLI, and the eval harness.
-2. **`sust-reg-reporter` ingestion + schema** — the snapshotting pipeline, the
-   bitemporal data model, and the applicability engine.
-3. **The web app** last — generated mostly statically from the corpus, with the
-   thin interactive API for the slider, scope checker, and diff view.
+1. ✅ **`semdiff`** — the meaning-aware diff engine, published as
+   [`semdiff@0.1.0`](https://www.npmjs.com/package/semdiff) and integrated here.
+2. ✅ **`core` domain logic** — status states, applicability engine, and the
+   bitemporal resolver, with seed data and a per-file-gated test suite.
+3. ✅ **Infrastructure** — all four CDK stacks deployed (cost backstop, data
+   store + DSQL, snapshotting pipeline, serving layer).
+4. ✅ **Web app** — prerendered static site with a client-side Scope Checker and
+   as-of slider.
+5. ⬜ **Pipeline connective tissue** — source adapters, the ingestor's S3 write,
+   and the differ's S3-read + DSQL persist of diffs.
+6. ⬜ **Corpus-backed API** — wire the thin API over the stored corpus and point
+   the web app at the live `/api`.
 
 ## License
 

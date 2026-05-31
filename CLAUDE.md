@@ -56,8 +56,11 @@ infra/      # AWS CDK infrastructure as code
 ```
 
 `core` is pure domain logic (status states, applicability engine, citation
-contract) with no I/O, no AWS, and no framework. It runs and tests with Node's
-native TypeScript type-stripping — `npm test` needs no install.
+contract, bitemporal resolver) with no I/O, no AWS, and no runtime
+dependencies. Tests run on **Vitest** with a hard **per-file coverage gate
+(95% line / 90% branch)** enforced locally and in CI
+([ADR-0019](adr/0019-vitest-testing-and-coverage.md)); run `npm install`, then
+`npm test`.
 
 These are monorepo workspaces, not separate repos. Keep cross-cutting types and
 tooling shared rather than duplicated.
@@ -70,17 +73,17 @@ tooling shared rather than duplicated.
 - **S3 snapshots are immutable and content-addressed** (keyed by hash). Never
   overwrite; identical content is stored once.
   ([ADR-0011](adr/0011-content-addressed-snapshot-store.md))
-- **Aurora DSQL** is the store, accessed via a **stateless HTTP/data-API
-  driver** (never raw TCP pooling from Lambda — connection exhaustion).
-  Remember DSQL is Postgres-*compatible*, not full Postgres: verify range types,
-  exclusion constraints, FKs, and pgvector before relying on them; otherwise
-  enforce integrity in application code.
-  ([ADR-0012](adr/0012-aurora-dsql-data-store.md))
+- **Aurora DSQL** is the store, reached over its **public TLS endpoint with
+  IAM-token auth, connecting per invocation** (never a long-lived TCP pool from
+  Lambda — connection exhaustion; no VPC needed). DSQL is Postgres-*compatible*,
+  not full Postgres: verify range types, exclusion constraints, FKs, and
+  pgvector before relying on them; otherwise enforce integrity in application
+  code. ([ADR-0012](adr/0012-aurora-dsql-data-store.md))
 - **Serving:** statically generate most pages; reserve the thin API for the
-  three interactive features. Expose the API via **Lambda Function URLs behind
-  CloudFront** — not API Gateway.
-  ([ADR-0013](adr/0013-static-generation-thin-api.md),
-  [ADR-0014](adr/0014-lambda-function-urls-over-api-gateway.md))
+  three interactive features. Expose the API via an **API Gateway HTTP API
+  behind CloudFront** — the Lambda is never public and the endpoint is throttled
+  ([ADR-0023](adr/0023-api-gateway-http-api.md) supersedes the original Lambda
+  Function URL approach). ([ADR-0013](adr/0013-static-generation-thin-api.md))
 - **IaC is CDK** in `infra/`. ([ADR-0015](adr/0015-cdk-for-infrastructure.md))
 
 ## Cost discipline (codify in CDK, never click-ops)
@@ -92,6 +95,13 @@ The project must run indefinitely inside AWS **Always Free**
 - **No NAT Gateway** (~$33/mo to exist) — keep Lambda out of VPCs that need one.
 - **CloudWatch Logs retention 7–14 days** or logs bill silently.
 - **Single region.**
+- **Secrets in SSM `SecureString`**, not Secrets Manager ($0.40/secret/mo) —
+  free and encrypted ([ADR-0024](adr/0024-ssm-securestring-secrets.md)).
+- **API Gateway HTTP API** is billable but pennies/month at this volume
+  ([ADR-0023](adr/0023-api-gateway-http-api.md)); REST API and ALB stay out.
+- **The $1 AWS budget alarm does NOT cover Anthropic/Claude spend** (billed
+  outside AWS). The differ is content-hash-gated and async-only; set a spend cap
+  in the Anthropic console as the backstop.
 
 When adding infrastructure, check it against Always Free before introducing it.
 If a feature can't fit, surface the cost rather than quietly adding billable
@@ -113,10 +123,12 @@ The unglamorous engineering is the contribution, not the prompt
 
 ## Working agreements
 
-- **Branch:** develop on `claude/sust-reg-tracker-brief-WYye9`. Do not push to
-  `main` without explicit permission.
+- **Branch & PRs:** work in **small, focused topic branches off `main`** and
+  open a **PR per change** (merge each before the next builds on it). Never push
+  directly to `main`. Keep PRs bite-sized and reviewable.
 - **Commits:** clear, descriptive messages.
-- **Pull requests:** always open a PR for your changes once they're pushed.
+- **Deploy to verify:** after a CDK change, actually `cdk deploy` (not just
+  `synth`) and confirm the live resource — consistently.
 - **Scope:** v1 is exactly three regimes — California SB 253/261, EU CSRD
   (post-Omnibus), ISSB S1/S2. Don't add regimes without a decision.
   ([ADR-0009](adr/0009-v1-scope-three-regimes.md))
@@ -124,8 +136,13 @@ The unglamorous engineering is the contribution, not the prompt
   in `adr/` following the existing MADR-style template; ADRs are immutable —
   supersede, don't edit. ([ADR-0000](adr/0000-record-architecture-decisions.md))
 
-## Build order (when implementation starts)
+## Current state & what's next
 
-1. `semdiff` (separate repo): engine, CLI, eval harness.
-2. This repo: ingestion pipeline + bitemporal schema + applicability engine.
-3. Web app: static generation + the thin interactive API.
+Built and deployed: `semdiff@0.1.0` (separate repo, integrated here), the `core`
+domain logic, all four CDK stacks (cost / data + DSQL / pipeline / serving —
+live in us-west-2), and the prerendered web app. The change-detection path is
+wired end to end (the differ runs `semdiff`, content-hash-gated and async-only).
+
+Next: source adapters (ADR-0008) + the ingestor's S3 write; the differ reading
+snapshot text from S3 and persisting the diff to DSQL; the corpus-backed API
+endpoints; and pointing the web app at the live `/api`.
