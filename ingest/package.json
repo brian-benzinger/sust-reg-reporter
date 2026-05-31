@@ -4,5 +4,8 @@
   "private": true,
   "description": "Snapshotting pipeline: ingestor + differ Lambda handlers and the content-hash change gate (ADR-0007, ADR-0010, ADR-0011).",
   "license": "MIT",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "semdiff": "^0.1.0"
+  }
 }
