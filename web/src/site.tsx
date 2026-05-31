@@ -6,6 +6,7 @@
 import type { ReactNode } from "react";
 import { caRegime, type Obligation } from "@sust-reg/core";
 import { obligationView, regimeGroups } from "./model.ts";
+import { AsOfSliderPage } from "./components/AsOfSliderPage.tsx";
 import { Home } from "./components/Home.tsx";
 import { ObligationPage } from "./components/ObligationPage.tsx";
 import { RegimesIndex } from "./components/RegimesIndex.tsx";
@@ -53,6 +54,15 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
       canonicalPath: "/scope-checker.html",
       withClient: true,
       node: <ScopeCheckerPage />,
+    },
+    {
+      path: "as-of.html",
+      title: "As-of-date slider — sust-reg-reporter",
+      description:
+        "See what was in effect on a given date, and what we believed was in effect as of a chosen knowledge date — the bitemporal model made visible.",
+      canonicalPath: "/as-of.html",
+      withClient: true,
+      node: <AsOfSliderPage />,
     },
   ];
 

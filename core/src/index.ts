@@ -5,4 +5,6 @@
 export * from "./status.ts";
 export * from "./citation.ts";
 export * from "./applicability.ts";
+export * from "./temporal.ts";
+export type { ObligationStatusHistory } from "./regimes/ca-sb253-261.ts";
 export * as caRegime from "./regimes/ca-sb253-261.ts";

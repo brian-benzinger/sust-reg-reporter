@@ -60,10 +60,13 @@ sust-reg-reporter/
 ### Implementation status
 
 **Domain logic** — [`core/`](core/) ([ADR-0018](adr/0018-shared-core-domain-workspace.md)):
-the explicit **regulation status states** ([ADR-0006](adr/0006-explicit-regulation-status-states.md))
-and the **applicability engine** ([ADR-0005](adr/0005-applicability-engine.md)),
-with California SB 253/261 seed data. Pure — no I/O, no AWS, no framework, and no
-runtime dependencies.
+the explicit **regulation status states** ([ADR-0006](adr/0006-explicit-regulation-status-states.md)),
+the **applicability engine** ([ADR-0005](adr/0005-applicability-engine.md)), and
+a **bitemporal resolver** ([ADR-0003](adr/0003-bitemporal-data-model.md),
+[ADR-0022](adr/0022-in-code-bitemporal-representation.md)) that answers
+"what was in effect on D, as we knew it on K" — with California SB 253/261 seed
+data and a versioned SB 261 status history. Pure — no I/O, no AWS, no framework,
+and no runtime dependencies.
 
 **Quality bar** — tests run on **Vitest** with a hard **per-file coverage gate
 (95% line / 90% branch)**, enforced locally and in CI
@@ -84,14 +87,17 @@ runtime dependencies.
 rendered from the `core` corpus, **prerendered to static HTML** with webpack so
 pages stay indexable and Always-Free to host. It ships a landing page, a regimes
 index, a page per obligation (status, applicability criteria, first reporting
-deadline, grounded/ungrounded citation flag), and the first interactive
-feature — a **client-side Scope Checker** that runs the shared applicability
-engine in the browser and hydrates over the prerendered markup. View-model and
-scope-check logic are pure and held to the same per-file coverage gate; the
-webpack config and the client/prerender entry points are glue.
+deadline, grounded/ungrounded citation flag), and two **client-side interactive
+features** that hydrate over the prerendered markup: a **Scope Checker** that
+runs the applicability engine in the browser, and an **as-of-date slider** that
+runs the bitemporal resolver to show how a status reads on a chosen valid date
+versus a chosen knowledge date. View-model, scope-check, and timeline logic are
+pure and held to the same per-file coverage gate; the webpack config and the
+client/prerender entry points are glue.
 
-Still to come: Aurora DSQL, the ingest/differ pipeline, the thin interactive API
-(as-of slider, diff view), and the web↔pipeline regeneration hook.
+Still to come: the ingest/differ pipeline, the **diff view** (needs `semdiff`),
+the thin interactive API for corpus-backed resolution, and the web↔pipeline
+regeneration hook.
 
 ```sh
 npm test                            # unit tests + per-file coverage gate
