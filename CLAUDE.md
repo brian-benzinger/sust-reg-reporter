@@ -99,7 +99,7 @@ resources.
 
 ## Quality bar (the actual contribution)
 
-The senior-level signal is the unglamorous engineering, not the prompt
+The unglamorous engineering is the contribution, not the prompt
 ([ADR-0017](adr/0017-reliability-and-quality-layer.md)):
 
 - Validate all model output against a schema.

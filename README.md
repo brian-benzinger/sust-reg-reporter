@@ -3,10 +3,11 @@
 > Version-tracked climate disclosure regulations with point-in-time history,
 > sourced citations, and per-company applicability.
 
-**Status:** pre-implementation. This commit establishes the design of record —
-the Architecture Decision Records, README, and contributor guide — before any
-application code is written. See [`adr/`](adr/) for the full rationale behind
-every decision summarized here.
+**Status:** early implementation. The design of record ([`adr/`](adr/)) is
+complete; the shared domain logic and the first AWS infrastructure stacks are
+built, tested, and deployed. See [Implementation status](#implementation-status)
+for what exists today, and [`adr/`](adr/) for the rationale behind every
+decision.
 
 > ⚠️ **Not legal advice.** This tool returns primary-source text, citations,
 > effective dates, and applicability metadata. It does **not** interpret
@@ -58,15 +59,32 @@ sust-reg-reporter/
 
 ### Implementation status
 
-The first slice of business logic is in [`core/`](core/) ([ADR-0018](adr/0018-shared-core-domain-workspace.md)):
+**Domain logic** — [`core/`](core/) ([ADR-0018](adr/0018-shared-core-domain-workspace.md)):
 the explicit **regulation status states** ([ADR-0006](adr/0006-explicit-regulation-status-states.md))
 and the **applicability engine** ([ADR-0005](adr/0005-applicability-engine.md)),
-with California SB 253/261 seed data and unit tests. It is pure (no I/O, no AWS,
-no framework) and runs with Node's native TypeScript support — no build step,
-no dependencies:
+with California SB 253/261 seed data. Pure — no I/O, no AWS, no framework, and no
+runtime dependencies.
+
+**Quality bar** — tests run on **Vitest** with a hard **per-file coverage gate
+(95% line / 90% branch)**, enforced locally and in CI
+([ADR-0019](adr/0019-vitest-testing-and-coverage.md)).
+
+**Infrastructure** — AWS CDK in [`infra/`](infra/), deployed to **us-west-2**:
+
+- `CostStack` — the **$1 monthly budget** backstop (ADR-0016), live with
+  80% / 100% email alerts.
+- `DataStack` — the **content-addressed S3 snapshot store** (ADR-0011):
+  versioned, object-locked, private, and retained.
+- Cost-discipline **guardrail Aspects** fail `cdk synth` on a NAT Gateway, a
+  VPC, API Gateway, an ALB, an unbounded log group, or a stray region.
+
+Still to come: Aurora DSQL, the ingest/differ pipeline, the thin API, and the
+web site.
 
 ```sh
-npm test
+npm test                            # unit tests + per-file coverage gate
+npm run typecheck                   # tsc over core + infra
+npm run synth -w @sust-reg/infra    # synthesize the CloudFormation templates
 ```
 
 ## v1 scope
@@ -206,7 +224,7 @@ inside AWS **Always Free** ([ADR-0016](adr/0016-aws-always-free-cost-discipline.
 An LLM in a loop is nondeterministic, costs per call, and is wrong some
 percentage of the time. The unglamorous engineering — schema validation,
 retries, idempotency, caching, confidence flags, an eval harness, graceful
-failure — is the actual contribution and the senior-level signal. The product
+failure — is the actual contribution. The product
 is scoped to where **~90–95% correctness with human review beats the status
 quo**; nothing here is built to silently need four-nines accuracy.
 ([ADR-0017](adr/0017-reliability-and-quality-layer.md))
