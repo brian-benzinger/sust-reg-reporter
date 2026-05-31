@@ -1,0 +1,8 @@
+{
+  "name": "@sust-reg/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Thin interactive API (ADR-0013, ADR-0014): as-of slider, scope checker, diff view — served via a Lambda Function URL behind CloudFront.",
+  "license": "MIT",
+  "type": "module"
+}

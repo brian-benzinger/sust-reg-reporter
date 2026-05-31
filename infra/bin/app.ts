@@ -2,6 +2,7 @@ import * as cdk from "aws-cdk-lib";
 import { CostStack } from "../lib/cost-stack.ts";
 import { DataStack } from "../lib/data-stack.ts";
 import { PipelineStack } from "../lib/pipeline-stack.ts";
+import { ServingStack } from "../lib/serving-stack.ts";
 import {
   LogRetentionAspect,
   NoCostlyNetworkingAspect,
@@ -39,6 +40,14 @@ new PipelineStack(app, "SustReg-Pipeline", {
   env,
   description:
     "sust-reg-reporter ingest pipeline: EventBridge-scheduled ingestor + differ Lambdas (ADR-0010).",
+});
+
+// Serving layer (ADR-0013, ADR-0014): one CloudFront fronting the static web
+// site and the thin API (/api/*) Lambda Function URL.
+new ServingStack(app, "SustReg-Serving", {
+  env,
+  description:
+    "sust-reg-reporter serving layer: CloudFront + private web bucket + thin API Lambda Function URL (ADR-0013, ADR-0014).",
 });
 
 // Cost-discipline guardrails, enforced at synth time (ADR-0016, ADR-0014).
