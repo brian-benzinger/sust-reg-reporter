@@ -57,6 +57,10 @@ export function Layout(props: LayoutProps): React.ReactElement {
         </main>
         <footer className="site">
           <div className="wrap">
+            <nav className="footer-nav">
+              <a href="/status-states.html">Status states</a>
+              <a href="/methodology.html">Methodology</a>
+            </nav>
             <p>
               <strong>{NOT_LEGAL_ADVICE}</strong>
             </p>

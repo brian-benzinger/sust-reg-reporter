@@ -122,6 +122,7 @@ footer.site {
   padding: 1.5rem 0 2.5rem;
 }
 footer.site p { margin: 0.35rem 0; }
+footer.site .footer-nav { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem; }
 
 form.scope { margin: 1rem 0 1.5rem; }
 form.scope .fields {
