@@ -56,8 +56,10 @@ export class PipelineStack extends cdk.Stack {
     );
 
     // Reused: permission to open an IAM-authed connection to the DSQL cluster.
+    // DbConnectAdmin lets the pipeline connect as the DSQL admin role for now; a
+    // least-privilege DB role mapped to the Lambda is a follow-up hardening.
     const dsqlConnect = new iam.PolicyStatement({
-      actions: ["dsql:DbConnect"],
+      actions: ["dsql:DbConnect", "dsql:DbConnectAdmin"],
       resources: [dsqlClusterArn],
     });
 
@@ -74,9 +76,11 @@ export class PipelineStack extends cdk.Stack {
       runtime: lambda.Runtime.NODEJS_22_X,
       architecture: lambda.Architecture.ARM_64,
       handler: "handler",
-      // Keep @aws-sdk/* out of the bundle — the Node 22 Lambda runtime provides
-      // it (the differ uses @aws-sdk/client-ssm to read the key).
-      bundling: { minify: true, externalModules: ["@aws-sdk/*"] },
+      // Bundle dependencies (semdiff, pg, @aws-sdk/dsql-signer + client-ssm):
+      // the pipeline needs @aws-sdk/dsql-signer, which the Lambda runtime does
+      // NOT provide, so we can't externalize @aws-sdk wholesale. pg's optional
+      // native addon stays external (unused — pg falls back to pure JS).
+      bundling: { minify: true, externalModules: ["pg-native"] },
     };
 
     // Differ — runs semdiff on a changed snapshot (gated by the ingestor).

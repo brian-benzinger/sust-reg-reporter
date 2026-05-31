@@ -39,11 +39,13 @@ describe("PipelineStack (ADR-0010)", () => {
     });
   });
 
-  it("grants the functions dsql:DbConnect on the cluster", () => {
+  it("grants the functions DSQL connect (admin) on the cluster", () => {
     t.hasResourceProperties("AWS::IAM::Policy", {
       PolicyDocument: Match.objectLike({
         Statement: Match.arrayWith([
-          Match.objectLike({ Action: "dsql:DbConnect" }),
+          Match.objectLike({
+            Action: Match.arrayWith(["dsql:DbConnectAdmin"]),
+          }),
         ]),
       }),
     });
