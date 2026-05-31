@@ -1,4 +1,5 @@
-import { ping } from "../io/db.ts";
+import { ping, withDsql } from "../io/db.ts";
+import { ensureSchema } from "../io/schema.ts";
 
 /**
  * Ingestor Lambda (ADR-0010) — the scheduled poll over authoritative sources
@@ -7,18 +8,29 @@ import { ping } from "../io/db.ts";
  * immutable snapshot and asynchronously invoke the differ.
  *
  * Scaffold: the source adapters, S3 write, and differ dispatch land in following
- * changes. A `dbPing` path proves the Lambda's own IAM role can reach DSQL.
+ * changes. `dbPing` proves the Lambda's IAM role can reach DSQL; `dbInit`
+ * idempotently creates the schema (ADR-0003).
  */
 interface IngestorEvent {
   readonly dbPing?: boolean;
+  readonly dbInit?: boolean;
 }
 
 export async function handler(
   event: IngestorEvent = {},
-): Promise<{ ok: boolean; processed?: number; db?: string }> {
+): Promise<{
+  ok: boolean;
+  processed?: number;
+  db?: string;
+  tables?: string[];
+}> {
   if (event.dbPing === true) {
     const r = await ping();
     return { ok: r.ok, db: r.server };
+  }
+  if (event.dbInit === true) {
+    const tables = await withDsql((client) => ensureSchema(client));
+    return { ok: true, tables };
   }
   const bucket = process.env.SNAPSHOT_BUCKET;
   const differ = process.env.DIFFER_FUNCTION_NAME;
