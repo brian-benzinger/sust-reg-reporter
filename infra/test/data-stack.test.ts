@@ -60,3 +60,30 @@ describe("DataStack — content-addressed snapshot store (ADR-0011)", () => {
     });
   });
 });
+
+describe("DataStack — Aurora DSQL (ADR-0012)", () => {
+  it("creates a single deletion-protected DSQL cluster", () => {
+    const t = template();
+    t.resourceCountIs("AWS::DSQL::Cluster", 1);
+    t.hasResourceProperties("AWS::DSQL::Cluster", {
+      DeletionProtectionEnabled: true,
+    });
+  });
+
+  it("retains the cluster on stack deletion (the corpus is durable)", () => {
+    template().hasResource("AWS::DSQL::Cluster", {
+      DeletionPolicy: "Retain",
+      UpdateReplacePolicy: "Retain",
+    });
+  });
+
+  it("publishes the DSQL endpoint and cluster ARN to SSM", () => {
+    const t = template();
+    t.hasResourceProperties("AWS::SSM::Parameter", {
+      Name: "/sust-reg/dsql/endpoint",
+    });
+    t.hasResourceProperties("AWS::SSM::Parameter", {
+      Name: "/sust-reg/dsql/cluster-arn",
+    });
+  });
+});
