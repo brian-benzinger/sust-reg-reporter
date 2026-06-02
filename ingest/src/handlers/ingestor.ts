@@ -1,10 +1,13 @@
 import { InvokeCommand, LambdaClient } from "@aws-sdk/client-lambda";
+import { caRegime } from "@sust-reg/core";
 import { contentHash } from "../hash.ts";
 import { ingestSource, type IngestDeps, type IngestResult } from "../ingest.ts";
 import type { DiffRequest } from "../diffjob.ts";
+import { seedCorpus, type SeedResult } from "../seed.ts";
 import { SOURCES, type SourceConfig } from "../sources.ts";
 import { fetchText } from "../io/fetch.ts";
 import { ping, withDsql } from "../io/db.ts";
+import { dsqlSeedDeps } from "../io/obligations.ts";
 import { latestVersion, recordVersion } from "../io/repo.ts";
 import { putSnapshotIfAbsent } from "../io/s3.ts";
 import { ensureSchema, ensureReaderRole } from "../io/schema.ts";
@@ -32,6 +35,7 @@ interface IngestorEvent {
   readonly dbPing?: boolean;
   readonly dbInit?: boolean;
   readonly dbGrants?: { readonly role: string; readonly iamRoleArn: string };
+  readonly corpusSeed?: boolean;
   readonly demo?: { readonly before: string; readonly after: string };
 }
 
@@ -39,8 +43,10 @@ interface IngestorEvent {
  * Ingestor Lambda (ADR-0010): the scheduled poll. For each source it fetches,
  * content-hashes, gates, and — on change — writes the snapshot and appends a
  * version, asynchronously invoking the differ when there is a prior version.
- * `dbPing`/`dbInit` are diagnostics; `demo` runs the whole loop over a small
- * inline before/after so the pipeline is verifiable end to end.
+ * `dbPing`/`dbInit`/`dbGrants` are diagnostics/provisioning; `corpusSeed` loads
+ * the v1 obligation corpus and its bitemporal status histories; `demo` runs the
+ * whole loop over a small inline before/after so the pipeline is verifiable end
+ * to end.
  */
 export async function handler(event: IngestorEvent = {}): Promise<unknown> {
   if (event.dbPing === true) {
@@ -57,10 +63,30 @@ export async function handler(event: IngestorEvent = {}): Promise<unknown> {
       reader: await withDsql((c) => ensureReaderRole(c, { role, iamRoleArn })),
     };
   }
+  if (event.corpusSeed === true) {
+    return runCorpusSeed();
+  }
   if (event.demo !== undefined) {
     return runDemo(event.demo);
   }
   return runIngest();
+}
+
+/**
+ * Load the v1 regulation/obligation corpus and its append-only status histories
+ * (ADR-0003, ADR-0009). Ensures the schema first, then seeds idempotently — a
+ * re-run neither rewrites obligations nor duplicates status facts (ADR-0017).
+ */
+async function runCorpusSeed(): Promise<{ ok: boolean; seeded: SeedResult[] }> {
+  const seeded = await withDsql(async (client) => {
+    await ensureSchema(client);
+    return seedCorpus(
+      dsqlSeedDeps(client),
+      caRegime.CALIFORNIA_OBLIGATIONS,
+      caRegime.CALIFORNIA_STATUS_HISTORIES,
+    );
+  });
+  return { ok: true, seeded };
 }
 
 async function runIngest(): Promise<{ ok: boolean; results: IngestResult[] }> {

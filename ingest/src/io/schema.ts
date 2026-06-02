@@ -9,8 +9,16 @@ import type pg from "pg";
  * consecutive versions. uuid primary keys (DSQL has no sequences); no foreign
  * keys (DSQL does not enforce them — referential integrity is kept in app code);
  * and the StructuredDiff is stored as JSON `text` because DSQL has no `jsonb`
- * type (ADR-0012). The richer regulation/obligation bitemporal corpus follows
- * later.
+ * type (ADR-0012).
+ *
+ * The regulation/obligation corpus sits alongside the snapshot tables:
+ * `obligations` holds each obligation's static attributes plus the citation it
+ * pins to, and `obligation_status_history` is the append-only bitemporal status
+ * record (ADR-0003) — a `stayed` fact recorded later supersedes an earlier
+ * `in-effect` belief about the same valid period without erasing it (the SB 261
+ * case, ADR-0006). Its valid/transaction dates are stored as `text` ISO-8601 so
+ * they keep the exact string semantics the shared resolver compares on, with no
+ * timezone normalization at the boundary.
  */
 export const SCHEMA_DDL: readonly string[] = [
   `create table if not exists sources (
@@ -46,6 +54,27 @@ export const SCHEMA_DDL: readonly string[] = [
     changes          text not null,
     created_at       timestamptz not null default now()
   )`,
+  `create table if not exists obligations (
+    id                        text primary key,
+    regime                    text not null,
+    title                     text not null,
+    criteria                  text not null,
+    first_reporting_deadline  text,
+    source_label              text not null,
+    source_snapshot_hash      text not null,
+    source_url                text,
+    retrieved_at              text,
+    recorded_at               timestamptz not null default now()
+  )`,
+  `create table if not exists obligation_status_history (
+    id             uuid primary key default gen_random_uuid(),
+    obligation_id  text not null,
+    status         text not null,
+    valid_from     text not null,
+    valid_to       text,
+    recorded_at    text not null,
+    created_at     timestamptz not null default now()
+  )`,
 ];
 
 /**
@@ -70,6 +99,8 @@ export const READER_TABLES: readonly string[] = [
   "sources",
   "source_versions",
   "diffs",
+  "obligations",
+  "obligation_status_history",
 ];
 
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
