@@ -4,7 +4,7 @@
  * and performs no I/O, so the prerender entry (prerender.tsx) stays thin glue.
  */
 import type { ReactNode } from "react";
-import { caRegime, type Obligation } from "@sust-reg/core";
+import { ALL_OBLIGATIONS, type Obligation } from "@sust-reg/core";
 import { obligationView, regimeGroups } from "./model.ts";
 import { AsOfSliderPage } from "./components/AsOfSliderPage.tsx";
 import { DiffsPage } from "./components/DiffsPage.tsx";
@@ -121,7 +121,7 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
   return pages;
 }
 
-/** The default corpus served by the site: the v1 seed obligations (ADR-0009). */
+/** The default corpus served by the site: all three v1 regimes (ADR-0009). */
 export function defaultCorpus(): readonly Obligation[] {
-  return caRegime.CALIFORNIA_OBLIGATIONS;
+  return ALL_OBLIGATIONS;
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { type ObligationStatusHistory, caRegime } from "@sust-reg/core";
+import { type ObligationStatusHistory, ALL_STATUS_HISTORIES } from "@sust-reg/core";
 import { collectDates, resolveRows, type TimelineRow } from "../timeline.ts";
 import { statusLabel } from "../model.ts";
 import { StatusBadge } from "./Badges.tsx";
@@ -30,10 +30,10 @@ function apiRowToTimelineRow(row: AsOfApiRow): TimelineRow {
  * move so the rows reflect live corpus state.
  */
 export function AsOfSlider(props: {
-  /** Histories to resolve; defaults to the v1 California seed histories. */
+  /** Histories to resolve; defaults to the v1 seed histories (all regimes). */
   readonly histories?: readonly ObligationStatusHistory[];
 }): React.ReactElement {
-  const histories = props.histories ?? caRegime.CALIFORNIA_STATUS_HISTORIES;
+  const histories = props.histories ?? ALL_STATUS_HISTORIES;
   const { validDates, knowledgeDates } = collectDates(histories);
 
   const [validIdx, setValidIdx] = useState(validDates.length - 1);
