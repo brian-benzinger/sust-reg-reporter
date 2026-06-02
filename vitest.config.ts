@@ -27,6 +27,8 @@ export default defineConfig({
         ...coverageConfigDefaults.exclude,
         "ingest/src/handlers/**",
         "ingest/src/io/**",
+        "api/src/handlers/**",
+        "api/src/io/**",
         "web/src/client.tsx",
         "web/src/prerender.tsx",
       ],
