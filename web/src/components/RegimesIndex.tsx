@@ -32,9 +32,11 @@ export function RegimesIndex(props: {
       {props.groups.map((group) => (
         <section key={group.regime}>
           <h2>{group.regime}</h2>
-          {group.obligations.map((view) => (
-            <ObligationCard key={view.id} view={view} />
-          ))}
+          <div className="card-grid">
+            {group.obligations.map((view) => (
+              <ObligationCard key={view.id} view={view} />
+            ))}
+          </div>
         </section>
       ))}
     </>

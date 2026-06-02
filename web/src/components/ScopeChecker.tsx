@@ -115,7 +115,7 @@ export function ScopeChecker(props: {
   return (
     <>
       <form
-        className="scope"
+        className="scope panel"
         onSubmit={(event) => {
           event.preventDefault();
         }}

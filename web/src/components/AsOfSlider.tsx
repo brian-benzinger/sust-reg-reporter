@@ -72,7 +72,7 @@ export function AsOfSlider(props: {
 
   return (
     <>
-      <div className="asof-controls">
+      <div className="asof-controls panel">
         <label>
           In effect on: <strong>{validOn}</strong>
           <input

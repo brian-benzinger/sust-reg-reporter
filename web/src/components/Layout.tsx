@@ -57,6 +57,9 @@ export function Layout(props: LayoutProps): React.ReactElement {
         ) : null}
       </head>
       <body>
+        <a className="skip-link" href="#main">
+          Skip to content
+        </a>
         <header className="site">
           <div className="wrap">
             <a className="brand" href="/index.html">
@@ -72,7 +75,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
             <ThemeToggle />
           </div>
         </header>
-        <main>
+        <main id="main">
           <div className="wrap">{children}</div>
         </main>
         <footer className="site">
