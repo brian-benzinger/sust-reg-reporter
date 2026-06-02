@@ -56,7 +56,16 @@ header.site .wrap {
   padding-top: 1rem;
   padding-bottom: 1rem;
 }
-header.site .brand { font-weight: 700; font-size: 1.1rem; color: var(--fg); text-decoration: none; }
+header.site .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--fg);
+  text-decoration: none;
+}
+header.site .brand .leaf-icon { color: var(--ok); flex: none; }
 header.site nav { display: flex; gap: 1rem; margin-left: auto; }
 
 main { padding: 2rem 0 3rem; }

@@ -9,6 +9,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Layout } from "./components/Layout.tsx";
+import { FAVICON_PATH, FAVICON_SVG } from "./icon.tsx";
 import { buildPages, defaultCorpus, type PageSpec } from "./site.tsx";
 import { STYLESHEET, STYLESHEET_PATH } from "./styles.ts";
 
@@ -35,6 +36,11 @@ async function main(): Promise<void> {
   await writeFile(
     join(outDir, STYLESHEET_PATH.replace(/^\//, "")),
     STYLESHEET,
+    "utf8",
+  );
+  await writeFile(
+    join(outDir, FAVICON_PATH.replace(/^\//, "")),
+    FAVICON_SVG,
     "utf8",
   );
 
