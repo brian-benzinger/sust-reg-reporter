@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { NOT_LEGAL_ADVICE, SITE_NAME } from "../content.ts";
+import { FAVICON_PATH, LeafIcon } from "../icon.tsx";
 import { STYLESHEET_PATH } from "../styles.ts";
 
 /** Root-relative URL of the hydration bundle emitted by webpack. */
@@ -27,6 +28,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>{title}</title>
+        <link rel="icon" type="image/svg+xml" href={FAVICON_PATH} />
         {description !== undefined ? (
           <meta name="description" content={description} />
         ) : null}
@@ -42,6 +44,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
         <header className="site">
           <div className="wrap">
             <a className="brand" href="/index.html">
+              <LeafIcon />
               {SITE_NAME}
             </a>
             <nav>
