@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { NOT_LEGAL_ADVICE, SITE_NAME } from "../content.ts";
 import { FAVICON_PATH, LeafIcon } from "../icon.tsx";
 import { STYLESHEET_PATH } from "../styles.ts";
+import { THEME_INIT_SCRIPT } from "../theme.ts";
+import { ThemeToggle } from "./ThemeToggle.tsx";
 
 /** Root-relative URL of the hydration bundle emitted by webpack. */
 export const CLIENT_SCRIPT_PATH = "/app.js";
@@ -27,6 +29,20 @@ export function Layout(props: LayoutProps): React.ReactElement {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* Apply the stored/system theme before first paint (ADR-0029) so
+            there is no flash of the wrong theme; runs on every page, including
+            the static ones that never load the hydration bundle. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: light)"
+          content="#ffffff"
+        />
+        <meta
+          name="theme-color"
+          media="(prefers-color-scheme: dark)"
+          content="#0d1117"
+        />
         <title>{title}</title>
         <link rel="icon" type="image/svg+xml" href={FAVICON_PATH} />
         {description !== undefined ? (
@@ -53,6 +69,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
               <a href="/scope-checker.html">Scope checker</a>
               <a href="/as-of.html">As-of date</a>
             </nav>
+            <ThemeToggle />
           </div>
         </header>
         <main>
