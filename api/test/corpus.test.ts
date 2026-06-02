@@ -4,6 +4,7 @@ import type {
   CorpusReader,
   DiffDetail,
   DiffSummary,
+  ObligationStatusHistory,
   SourceSummary,
 } from "../src/model.ts";
 
@@ -37,14 +38,36 @@ const DETAIL: DiffDetail = {
   changes: [{ kind: "substantive" }],
 };
 
+// The /as-of route resolves the persisted histories the reader returns. This
+// fixture stands in for the seeded corpus: SB 261's enforcement stay (recorded
+// 2025) is the bitemporal showcase.
+const TIMELINES: ObligationStatusHistory[] = [
+  {
+    obligationId: "ca-sb253-ghg-disclosure",
+    title: "GHG emissions disclosure (Scope 1 & 2)",
+    regime: "CA-SB253",
+    history: [
+      { value: "proposed", validFrom: "2023-01-01", validTo: "2023-10-07", recordedAt: "2023-02-01" },
+      { value: "in-effect", validFrom: "2023-10-07", recordedAt: "2023-10-10" },
+    ],
+  },
+  {
+    obligationId: "ca-sb261-climate-risk-report",
+    title: "Climate-related financial risk report",
+    regime: "CA-SB261",
+    history: [
+      { value: "in-effect", validFrom: "2023-10-07", recordedAt: "2023-10-10" },
+      { value: "stayed", validFrom: "2024-12-01", recordedAt: "2025-01-15" },
+    ],
+  },
+];
+
 function reader(over: Partial<CorpusReader> = {}): CorpusReader {
   return {
     listSources: async () => [SOURCE],
     listDiffs: async () => [SUMMARY],
     getDiff: async () => DETAIL,
-    // The seed-backed /as-of route reads `core` directly, not the reader; the
-    // persisted-corpus port is exercised in the ingest seed tests.
-    statusTimelines: async () => [],
+    statusTimelines: async () => TIMELINES,
     ...over,
   };
 }
@@ -262,5 +285,15 @@ describe("/as-of (ADR-0003)", () => {
 
     expect(sb261in2024?.status).toBe("in-effect");
     expect(sb261in2025?.status).toBe("stayed");
+  });
+
+  it("returns empty date axes when the corpus has not been seeded", async () => {
+    const r = await serveRoute(
+      reader({ statusTimelines: async () => [] }),
+      req("/api/as-of"),
+    );
+    expect(r.status).toBe(200);
+    expect(r.body.validDates).toEqual([]);
+    expect(r.body.knowledgeDates).toEqual([]);
   });
 });

@@ -4,7 +4,7 @@ import {
   evaluateApplicability,
   type CompanyProfile,
   type ListingStatus,
-  caRegime,
+  ALL_OBLIGATIONS,
   resolveValueAsOf,
 } from "@sust-reg/core";
 
@@ -40,10 +40,11 @@ export interface ApiResult {
  * resolves the route, reads what it needs, and shapes the JSON body. The HTTP
  * handler is a thin wrapper that builds the reader and serializes the result.
  *
- * Corpus-backed routes (`/sources`, `/diff`) read from DSQL via the reader.
- * Interactive routes (`/scope-check`, `/as-of`) run against the v1 seed
- * obligations from `@sust-reg/core`; when DSQL gains an obligations table the
- * reader will replace the seed call without touching the route logic.
+ * Corpus-backed routes (`/sources`, `/diff`, `/as-of`) read from DSQL via the
+ * reader — `/as-of` resolves the persisted, append-only status histories
+ * (ADR-0003). `/scope-check` evaluates the v1 seed obligations from
+ * `@sust-reg/core` (applicability is threshold logic over the obligation set,
+ * not time-varying corpus state).
  */
 export async function serveRoute(
   reader: CorpusReader,
@@ -92,10 +93,7 @@ export async function serveRoute(
         fiscalYearEnd,
       };
 
-      const results = evaluateApplicability(
-        profile,
-        caRegime.CALIFORNIA_OBLIGATIONS,
-      );
+      const results = evaluateApplicability(profile, ALL_OBLIGATIONS);
       return ok(route, {
         results,
         applicableCount: results.filter((r) => r.applies).length,
@@ -103,7 +101,10 @@ export async function serveRoute(
       });
     }
     case "as-of": {
-      const histories = caRegime.CALIFORNIA_STATUS_HISTORIES;
+      // The persisted corpus (ADR-0003), reached through the reader — the seam
+      // the route was always meant to switch onto. Empty until `corpusSeed`
+      // runs; the web slider renders seed data first and overlays this.
+      const histories = await reader.statusTimelines();
 
       // Collect boundary dates from all obligation histories for slider stops
       const validSet = new Set<string>();
