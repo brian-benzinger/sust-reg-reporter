@@ -7,7 +7,7 @@ import { fetchText } from "../io/fetch.ts";
 import { ping, withDsql } from "../io/db.ts";
 import { latestVersion, recordVersion } from "../io/repo.ts";
 import { putSnapshotIfAbsent } from "../io/s3.ts";
-import { ensureSchema } from "../io/schema.ts";
+import { ensureSchema, ensureReaderRole } from "../io/schema.ts";
 
 const lambda = new LambdaClient({});
 
@@ -31,6 +31,7 @@ async function invokeDiffer(req: DiffRequest): Promise<void> {
 interface IngestorEvent {
   readonly dbPing?: boolean;
   readonly dbInit?: boolean;
+  readonly dbGrants?: { readonly role: string; readonly iamRoleArn: string };
   readonly demo?: { readonly before: string; readonly after: string };
 }
 
@@ -48,6 +49,13 @@ export async function handler(event: IngestorEvent = {}): Promise<unknown> {
   }
   if (event.dbInit === true) {
     return { ok: true, tables: await withDsql((c) => ensureSchema(c)) };
+  }
+  if (event.dbGrants !== undefined) {
+    const { role, iamRoleArn } = event.dbGrants;
+    return {
+      ok: true,
+      reader: await withDsql((c) => ensureReaderRole(c, { role, iamRoleArn })),
+    };
   }
   if (event.demo !== undefined) {
     return runDemo(event.demo);

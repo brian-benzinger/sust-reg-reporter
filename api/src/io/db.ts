@@ -4,16 +4,14 @@ import pg from "pg";
 /**
  * Aurora DSQL access from the API Lambda (ADR-0012).
  *
- * Same pattern as the ingest pipeline: connect PER INVOCATION over the cluster's
- * public TLS endpoint with a short-lived IAM auth token — no long-lived pool, no
- * VPC. The endpoint comes from `DSQL_ENDPOINT`; the region from `AWS_REGION`.
- * Duplicated here (rather than imported from `ingest`) so the read-facing API
- * does not depend on the pipeline workspace; it is a few lines of glue and is
- * excluded from the coverage gate.
- *
- * NOTE: connects as the DSQL admin role. The API is the public-facing read path,
- * so a least-privilege read-only DB role is the priority hardening follow-up;
- * until then every query here is parameterized and read-only.
+ * Same connect-per-invocation pattern as the ingest pipeline — public TLS
+ * endpoint, short-lived IAM auth token, no pool, no VPC — but the public-facing
+ * API connects as a least-privilege, SELECT-only database role (`DSQL_DB_ROLE`,
+ * default `api_reader`) mapped to this Lambda's IAM role. It uses the non-admin
+ * `dsql:DbConnect` token (`getDbConnectAuthToken`); it has no write capability,
+ * so a SQL bug or injection cannot mutate the corpus. Duplicated from `ingest`
+ * (rather than imported) so the read API does not depend on the pipeline; it is
+ * a few lines of glue and is excluded from the coverage gate.
  */
 export async function withDsql<T>(
   fn: (client: pg.Client) => Promise<T>,
@@ -24,12 +22,13 @@ export async function withDsql<T>(
   }
   const region =
     process.env.AWS_REGION ?? process.env.CDK_DEPLOY_REGION ?? "us-west-2";
+  const user = process.env.DSQL_DB_ROLE ?? "api_reader";
   const signer = new DsqlSigner({ hostname, region });
-  const token = await signer.getDbConnectAdminAuthToken();
+  const token = await signer.getDbConnectAuthToken();
   const client = new pg.Client({
     host: hostname,
     port: 5432,
-    user: "admin",
+    user,
     password: token,
     database: "postgres",
     ssl: { rejectUnauthorized: true },
