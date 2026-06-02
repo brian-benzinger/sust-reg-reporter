@@ -6,9 +6,11 @@ import {
   aws_apigatewayv2_integrations as apigwint,
   aws_cloudfront as cloudfront,
   aws_cloudfront_origins as origins,
+  aws_iam as iam,
   aws_lambda as lambda,
   aws_logs as logs,
   aws_s3 as s3,
+  aws_ssm as ssm,
 } from "aws-cdk-lib";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import type { Construct } from "constructs";
@@ -19,7 +21,8 @@ const API_HANDLER = join(
   "..",
   "api",
   "src",
-  "handler.ts",
+  "handlers",
+  "api.ts",
 );
 
 /**
@@ -53,8 +56,20 @@ export class ServingStack extends cdk.Stack {
     });
     this.webBucket = webBucket;
 
-    // Thin API Lambda (stub router). No Function URL — only API Gateway invokes
-    // it (ADR-0023).
+    // DSQL corpus handles from the DataStack, consumed via SSM (soft coupling,
+    // same as the pipeline) so serving can be torn down without touching data.
+    const dsqlEndpoint = ssm.StringParameter.valueForStringParameter(
+      this,
+      "/sust-reg/dsql/endpoint",
+    );
+    const dsqlClusterArn = ssm.StringParameter.valueForStringParameter(
+      this,
+      "/sust-reg/dsql/cluster-arn",
+    );
+
+    // Thin API Lambda — reads the DSQL corpus (ADR-0012). No Function URL: only
+    // API Gateway invokes it (ADR-0023). Bundle @aws-sdk/dsql-signer + pg (the
+    // runtime lacks the signer); pg's optional native addon stays external.
     const apiFn = new NodejsFunction(this, "ApiFn", {
       entry: API_HANDLER,
       handler: "handler",
@@ -66,8 +81,19 @@ export class ServingStack extends cdk.Stack {
         retention: logs.RetentionDays.TWO_WEEKS,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
       }),
-      bundling: { minify: true },
+      environment: { DSQL_ENDPOINT: dsqlEndpoint },
+      bundling: { minify: true, externalModules: ["pg-native"] },
     });
+
+    // The API is read-only over DSQL. DbConnectAdmin connects as the admin role
+    // for now; a least-privilege read-only DB role is the priority hardening for
+    // this public-facing read path (queries are parameterized in the meantime).
+    apiFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ["dsql:DbConnect", "dsql:DbConnectAdmin"],
+        resources: [dsqlClusterArn],
+      }),
+    );
 
     // API Gateway HTTP API -> Lambda, with a throttled default stage so the
     // public endpoint cannot run up cost (ADR-0023, ADR-0016).
