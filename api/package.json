@@ -2,7 +2,14 @@
   "name": "@sust-reg/api",
   "version": "0.0.0",
   "private": true,
-  "description": "Thin interactive API (ADR-0013, ADR-0014): as-of slider, scope checker, diff view — served via a Lambda Function URL behind CloudFront.",
+  "description": "Thin interactive API (ADR-0013, ADR-0023): corpus index, as-of slider, scope checker, diff view — served via an API Gateway HTTP API behind CloudFront, reading the DSQL corpus.",
   "license": "MIT",
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/dsql-signer": "^3.1057.0",
+    "pg": "^8.21.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0"
+  }
 }
