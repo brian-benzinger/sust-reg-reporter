@@ -7,12 +7,13 @@ import {
   resolveValueAsOf,
 } from "@sust-reg/core";
 
-describe("v1 corpus aggregate (ADR-0009)", () => {
-  it("spans all three v1 regimes with unique obligation ids", () => {
+describe("v1 corpus aggregate (ADR-0009, ADR-0027)", () => {
+  it("spans the public-source v1 regimes with unique obligation ids", () => {
     const regimes = new Set(ALL_OBLIGATIONS.map((o) => o.regime));
     expect(regimes).toContain("CA-SB261");
     expect([...regimes].some((r) => r.startsWith("EU-CSRD"))).toBe(true);
-    expect([...regimes].some((r) => r.startsWith("ISSB"))).toBe(true);
+    // ISSB is deferred pending an IFRS licence (ADR-0027).
+    expect([...regimes].some((r) => r.startsWith("ISSB"))).toBe(false);
 
     const ids = ALL_OBLIGATIONS.map((o) => o.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -57,18 +58,6 @@ describe("bitemporal showcases across regimes (ADR-0003)", () => {
     // …but the 2025 stop-the-clock reverted that same period to proposed.
     expect(resolveValueAsOf(h, { validOn: "2026-06-01", knownAsOf: "2025-12-01" })).toBe(
       "proposed",
-    );
-  });
-
-  it("ISSB S2: a baseline standard hardens into law as adoption is recorded", () => {
-    const h = historyFor("issb-s2-climate");
-    // Issued as a baseline (proposed) — that is all we knew in early 2024…
-    expect(resolveValueAsOf(h, { validOn: "2024-03-01", knownAsOf: "2024-03-01" })).toBe(
-      "proposed",
-    );
-    // …then early adopters brought it into force, recorded mid-2024.
-    expect(resolveValueAsOf(h, { validOn: "2024-03-01", knownAsOf: "2024-12-01" })).toBe(
-      "in-effect",
     );
   });
 });
