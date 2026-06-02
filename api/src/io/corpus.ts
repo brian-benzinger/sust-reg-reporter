@@ -1,4 +1,9 @@
 import type pg from "pg";
+import type {
+  ObligationStatusHistory,
+  RegulationStatus,
+  TemporalFact,
+} from "@sust-reg/core";
 import { withDsql } from "./db.ts";
 import type {
   CorpusReader,
@@ -13,7 +18,49 @@ import type {
  * coverage gate; the route logic that consumes it is tested against a fake.
  */
 export function dsqlCorpusReader(): CorpusReader {
-  return { listSources, listDiffs, getDiff };
+  return { listSources, listDiffs, getDiff, statusTimelines };
+}
+
+/**
+ * Reassemble each obligation's append-only status history (ADR-0003). The
+ * bitemporal dates are stored as `text` ISO-8601, so they come back as the exact
+ * strings the shared resolver compares on — no date coercion. Facts are ordered
+ * by record then valid time for a stable timeline.
+ */
+function statusTimelines(): Promise<ObligationStatusHistory[]> {
+  return withDsql(async (c) => {
+    const obs = await c.query<{ id: string; regime: string; title: string }>(
+      "select id, regime, title from obligations order by id",
+    );
+    const facts = await c.query<{
+      obligation_id: string;
+      status: string;
+      valid_from: string;
+      valid_to: string | null;
+      recorded_at: string;
+    }>(
+      `select obligation_id, status, valid_from, valid_to, recorded_at
+       from obligation_status_history
+       order by obligation_id, recorded_at, valid_from`,
+    );
+    const byObligation = new Map<string, TemporalFact<RegulationStatus>[]>();
+    for (const f of facts.rows) {
+      const list = byObligation.get(f.obligation_id) ?? [];
+      list.push({
+        value: f.status as RegulationStatus,
+        validFrom: f.valid_from,
+        ...(f.valid_to !== null ? { validTo: f.valid_to } : {}),
+        recordedAt: f.recorded_at,
+      });
+      byObligation.set(f.obligation_id, list);
+    }
+    return obs.rows.map((o) => ({
+      obligationId: o.id,
+      title: o.title,
+      regime: o.regime,
+      history: byObligation.get(o.id) ?? [],
+    }));
+  });
 }
 
 const UUID =
