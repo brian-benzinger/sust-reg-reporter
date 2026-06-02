@@ -9,5 +9,5 @@ export * from "./temporal.ts";
 export type { ObligationStatusHistory } from "./regimes/status-history.ts";
 export * as caRegime from "./regimes/ca-sb253-261.ts";
 export * as euRegime from "./regimes/eu-csrd.ts";
-export * as issbRegime from "./regimes/issb.ts";
+// ISSB (IFRS S1/S2) deferred from v1 pending an IFRS licence (ADR-0027).
 export { ALL_OBLIGATIONS, ALL_STATUS_HISTORIES } from "./regimes/index.ts";

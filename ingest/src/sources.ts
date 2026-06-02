@@ -15,11 +15,11 @@ export interface SourceConfig {
  * and EU CSRD (EUR-Lex) are the public-domain primary sources for the CA and EU
  * regimes.
  *
- * ISSB (IFRS S1/S2) is intentionally NOT auto-fetched yet: unlike the
- * public-domain statutes, the IFRS Foundation publishes the standards text under
- * copyright, so storing and redistributing snapshots needs a licensing decision
- * (likely a new ADR) before a fetch adapter is enabled. The ISSB *obligations*
- * are still modeled in `core` — that is metadata, not redistribution.
+ * ISSB (IFRS S1/S2) has NO source here and is deferred from v1 (ADR-0027): the
+ * IFRS Foundation publishes the standards text under copyright, and its terms
+ * forbid integrating it into a data service or product without a separate
+ * licence — exactly what storing and serving snapshots would do — so it cannot
+ * be ingested until such a licence is in place.
  */
 export const SOURCES: readonly SourceConfig[] = [
   {
