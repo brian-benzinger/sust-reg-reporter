@@ -72,12 +72,21 @@ describe("ServingStack (ADR-0013, ADR-0023)", () => {
     });
   });
 
-  it("bounds the api log group to 14 days (ADR-0016)", () => {
+  it("publishes the site via a CDK BucketDeployment that invalidates CloudFront (ADR-0026)", () => {
+    t.resourceCountIs("Custom::CDKBucketDeployment", 1);
+    t.hasResourceProperties("Custom::CDKBucketDeployment", {
+      Prune: true,
+      DistributionPaths: ["/*"],
+    });
+  });
+
+  it("bounds every serving log group to 14 days (ADR-0016)", () => {
     const groups = t.findResources("AWS::Logs::LogGroup");
     const retentions = Object.values(groups).map(
       (g) => (g.Properties as { RetentionInDays?: number }).RetentionInDays,
     );
-    expect(retentions.length).toBeGreaterThanOrEqual(1);
+    // The api Lambda and the BucketDeployment helper both have explicit groups.
+    expect(retentions.length).toBeGreaterThanOrEqual(2);
     expect(retentions.every((r) => r === 14)).toBe(true);
   });
 });
