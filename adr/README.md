@@ -38,7 +38,7 @@ product itself is built on.
 | [0006](0006-explicit-regulation-status-states.md) | Model regulation status states explicitly | Accepted |
 | [0007](0007-change-detection-via-semdiff.md) | Change detection and diffing gated through semdiff | Accepted |
 | [0008](0008-authoritative-source-ingestion.md) | Authoritative-source ingestion over HTML scraping | Accepted |
-| [0009](0009-v1-scope-three-regimes.md) | v1 scope: three high-churn regimes only | Accepted |
+| [0009](0009-v1-scope-three-regimes.md) | v1 scope: three high-churn regimes only | Accepted (ISSB scope superseded by 0027) |
 | [0010](0010-serverless-snapshotting-pipeline.md) | Serverless snapshotting pipeline on AWS | Accepted |
 | [0011](0011-content-addressed-snapshot-store.md) | Content-addressed S3 snapshot store | Accepted |
 | [0012](0012-aurora-dsql-data-store.md) | Aurora DSQL as the primary data store | Accepted |
@@ -56,3 +56,5 @@ product itself is built on.
 | [0024](0024-ssm-securestring-secrets.md) | SSM Parameter Store SecureString for app secrets | Accepted |
 | [0025](0025-least-privilege-database-roles.md) | Least-privilege database roles for the serving path | Accepted |
 | [0026](0026-cdk-managed-web-deployment.md) | CDK-managed web deployment via BucketDeployment | Accepted |
+| [0027](0027-issb-deferred-pending-ifrs-licensing.md) | ISSB deferred from the v1 corpus pending an IFRS Sustainability licence | Accepted |
+| [0028](0028-ground-obligations-via-append-only-grounding-facts.md) | Ground obligations to ingested snapshots via append-only grounding facts | Accepted |
