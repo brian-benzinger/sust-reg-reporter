@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { caRegime } from "@sust-reg/core";
+import { ALL_OBLIGATIONS } from "@sust-reg/core";
 import { buildPages, defaultCorpus } from "../src/site.tsx";
 
 describe("buildPages (ADR-0013)", () => {
@@ -15,10 +15,10 @@ describe("buildPages (ADR-0013)", () => {
     expect(byPath.has("diffs.html")).toBe(true);
     expect(byPath.has("status-states.html")).toBe(true);
     expect(byPath.has("methodology.html")).toBe(true);
-    for (const o of caRegime.CALIFORNIA_OBLIGATIONS) {
+    for (const o of ALL_OBLIGATIONS) {
       expect(byPath.has(`regimes/${o.id}.html`)).toBe(true);
     }
-    expect(pages).toHaveLength(8 + caRegime.CALIFORNIA_OBLIGATIONS.length);
+    expect(pages).toHaveLength(8 + ALL_OBLIGATIONS.length);
   });
 
   it("flags the interactive pages as needing the hydration bundle", () => {
@@ -48,7 +48,7 @@ describe("buildPages (ADR-0013)", () => {
 });
 
 describe("defaultCorpus", () => {
-  it("serves the v1 California seed obligations (ADR-0009)", () => {
-    expect(defaultCorpus()).toBe(caRegime.CALIFORNIA_OBLIGATIONS);
+  it("serves all three v1 regimes' seed obligations (ADR-0009)", () => {
+    expect(defaultCorpus()).toBe(ALL_OBLIGATIONS);
   });
 });
