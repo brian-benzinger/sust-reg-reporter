@@ -25,6 +25,45 @@ export const STYLESHEET = `:root {
   --paused: #9a6700;
   --link: #0b5fa5;
   --maxw: 56rem;
+  color-scheme: light;
+}
+
+/* Dark palette (ADR-0029). The inline init script sets data-theme on <html>
+   before paint; every color above flows through a variable, so a mode is just
+   a token override. Values track GitHub's dark scale for AA-legible contrast. */
+:root[data-theme="dark"] {
+  --bg: #0d1117;
+  --fg: #e6edf3;
+  --muted: #8b949e;
+  --border: #30363d;
+  --surface: #161b22;
+  --accent: #4493f8;
+  --warn-bg: #2d2410;
+  --warn-border: #9e6a03;
+  --ok: #3fb950;
+  --paused: #d29922;
+  --link: #4493f8;
+  color-scheme: dark;
+}
+
+/* No-JS fallback: honor the OS preference when the script never ran and no
+   explicit choice is pinned. With JS, data-theme is always set, so this is
+   inert. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #0d1117;
+    --fg: #e6edf3;
+    --muted: #8b949e;
+    --border: #30363d;
+    --surface: #161b22;
+    --accent: #4493f8;
+    --warn-bg: #2d2410;
+    --warn-border: #9e6a03;
+    --ok: #3fb950;
+    --paused: #d29922;
+    --link: #4493f8;
+    color-scheme: dark;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -37,6 +76,14 @@ body {
   line-height: 1.6;
   color: var(--fg);
   background: var(--bg);
+}
+
+/* Ease the swap between modes; respect reduced-motion preferences. */
+@media (prefers-reduced-motion: no-preference) {
+  body, header.site, footer.site, .card, .theme-toggle, .result,
+  form.scope input, form.scope select {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
 }
 
 a { color: var(--link); }
@@ -67,6 +114,33 @@ header.site .brand {
 }
 header.site .brand .leaf-icon { color: var(--ok); flex: none; }
 header.site nav { display: flex; gap: 1rem; margin-left: auto; }
+
+/* Theme toggle (ADR-0029). Carries all three glyphs; CSS reveals the one that
+   matches the live preference attribute the inline script sets on <html>. */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  padding: 0;
+  color: var(--fg);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  line-height: 0;
+}
+.theme-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.theme-toggle .ti { display: none; }
+/* Default to the System glyph before the script sets the preference attribute,
+   so no-JS visitors still see a sensible icon. */
+:root:not([data-theme-pref]) .theme-toggle .ti-system,
+:root[data-theme-pref="system"] .theme-toggle .ti-system,
+:root[data-theme-pref="light"] .theme-toggle .ti-light,
+:root[data-theme-pref="dark"] .theme-toggle .ti-dark { display: inline-flex; }
 
 main { padding: 2rem 0 3rem; }
 
