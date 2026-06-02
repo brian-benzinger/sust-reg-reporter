@@ -42,6 +42,9 @@ function reader(over: Partial<CorpusReader> = {}): CorpusReader {
     listSources: async () => [SOURCE],
     listDiffs: async () => [SUMMARY],
     getDiff: async () => DETAIL,
+    // The seed-backed /as-of route reads `core` directly, not the reader; the
+    // persisted-corpus port is exercised in the ingest seed tests.
+    statusTimelines: async () => [],
     ...over,
   };
 }

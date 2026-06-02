@@ -5,7 +5,14 @@
  * them through. Keeping the port abstract lets the route logic (`serveRoute`) be
  * pure and unit-tested with a fake reader; the DSQL/S3 implementation lives in
  * `io/` (glue, excluded from the coverage gate).
+ *
+ * The as-of slider serves `core`'s `ObligationStatusHistory` verbatim, so the
+ * web's existing client-side resolver (which already consumes that exact shape)
+ * can swap its seed import for a `/api/as-of` fetch unchanged.
  */
+import type { ObligationStatusHistory } from "@sust-reg/core";
+
+export type { ObligationStatusHistory } from "@sust-reg/core";
 
 /** One tracked source plus how many immutable versions we've recorded. */
 export interface SourceSummary {
@@ -48,4 +55,6 @@ export interface CorpusReader {
   listSources(): Promise<SourceSummary[]>;
   listDiffs(sourceKey?: string): Promise<DiffSummary[]>;
   getDiff(id: string): Promise<DiffDetail | undefined>;
+  /** Every obligation's append-only bitemporal status history (ADR-0003). */
+  statusTimelines(): Promise<ObligationStatusHistory[]>;
 }
