@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   type ApplicabilityResult,
   type ListingStatus,
@@ -10,8 +10,10 @@ import {
   LISTING_STATUSES,
   parseProfile,
   runScopeCheck,
+  type ScopeCheckView,
   type ScopeFormInput,
 } from "../scope-checker.ts";
+import { fetchScopeCheck } from "../api.ts";
 
 /** The id of the element the client hydrates into (shared with prerender). */
 export const SCOPE_CHECKER_ROOT_ID = "scope-checker-root";
@@ -49,10 +51,10 @@ function ResultItem(props: {
 }
 
 /**
- * The Scope Checker (ADR-0005 made interactive). A thin shell over the pure
- * `scope-checker` logic and the shared applicability engine; it computes live
- * from the current form state, so the prerendered HTML and the hydrated client
- * agree on the initial render.
+ * The Scope Checker (ADR-0005 made interactive). Runs the shared applicability
+ * engine locally for immediate feedback on every keystroke, and concurrently
+ * calls the API (debounced) so live corpus data replaces the seed result once
+ * it arrives.
  */
 export function ScopeChecker(props: {
   /** Corpus to evaluate against; defaults to the v1 seed obligations. */
@@ -63,8 +65,52 @@ export function ScopeChecker(props: {
   const update = (patch: Partial<ScopeFormInput>): void =>
     setInput((prev) => ({ ...prev, ...patch }));
 
+  // Local computation runs synchronously — no latency, prerender-compatible.
   const { profile, errors } = parseProfile(input);
-  const view = runScopeCheck(profile, obligations);
+  const localView = runScopeCheck(profile, obligations);
+
+  // API state: replaces local view when the endpoint responds.
+  const [apiView, setApiView] = useState<ScopeCheckView | null>(null);
+  const [apiLoading, setApiLoading] = useState(false);
+
+  const view = apiView ?? localView;
+
+  // Call /api/scope-check 400 ms after the last input change.
+  // clearTimeout in the cleanup cancels the pending call; if a fetch is already
+  // in-flight when input changes, the stale result is harmless — the next fetch
+  // overwrites it immediately.
+  useEffect(() => {
+    const { errors: currentErrors } = parseProfile(input);
+    if (currentErrors.length > 0) {
+      setApiView(null);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setApiLoading(true);
+      fetchScopeCheck({
+        revenue: input.revenue,
+        jurisdictions: input.jurisdictions,
+        listingStatus: input.listingStatus,
+        fiscalYearEnd: input.fiscalYearEnd,
+      })
+        .then((data) => {
+          setApiView({
+            results: data.results,
+            applicableCount: data.applicableCount,
+            enforceableCount: data.enforceableCount,
+          });
+        })
+        .catch(() => {
+          setApiView(null);
+        })
+        .finally(() => {
+          setApiLoading(false);
+        });
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [input]);
 
   return (
     <>
@@ -127,6 +173,8 @@ export function ScopeChecker(props: {
           </ul>
         </div>
       ) : null}
+
+      {apiLoading ? <p className="loading" aria-live="polite">Checking…</p> : null}
 
       <p className="summary">
         {view.applicableCount} of {view.results.length} obligation(s) apply;{" "}

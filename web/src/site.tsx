@@ -7,11 +7,13 @@ import type { ReactNode } from "react";
 import { caRegime, type Obligation } from "@sust-reg/core";
 import { obligationView, regimeGroups } from "./model.ts";
 import { AsOfSliderPage } from "./components/AsOfSliderPage.tsx";
+import { DiffsPage } from "./components/DiffsPage.tsx";
 import { Home } from "./components/Home.tsx";
 import { MethodologyPage } from "./components/MethodologyPage.tsx";
 import { ObligationPage } from "./components/ObligationPage.tsx";
 import { RegimesIndex } from "./components/RegimesIndex.tsx";
 import { ScopeCheckerPage } from "./components/ScopeCheckerPage.tsx";
+import { SourcesPage } from "./components/SourcesPage.tsx";
 import { StatusStatesPage } from "./components/StatusStatesPage.tsx";
 
 export interface PageSpec {
@@ -65,6 +67,24 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
       canonicalPath: "/as-of.html",
       withClient: true,
       node: <AsOfSliderPage />,
+    },
+    {
+      path: "sources.html",
+      title: "Tracked sources — sust-reg-reporter",
+      description:
+        "Primary regulatory sources tracked by the corpus, with version counts and ingestion timestamps.",
+      canonicalPath: "/sources.html",
+      withClient: true,
+      node: <SourcesPage />,
+    },
+    {
+      path: "diffs.html",
+      title: "Change history — sust-reg-reporter",
+      description:
+        "Meaning-aware diffs between consecutive versions of tracked regulatory sources, produced by semdiff.",
+      canonicalPath: "/diffs.html",
+      withClient: true,
+      node: <DiffsPage />,
     },
     {
       path: "status-states.html",

@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { type ObligationStatusHistory, caRegime } from "@sust-reg/core";
-import { collectDates, resolveRows } from "../timeline.ts";
+import { collectDates, resolveRows, type TimelineRow } from "../timeline.ts";
+import { statusLabel } from "../model.ts";
 import { StatusBadge } from "./Badges.tsx";
+import { fetchAsOf, type AsOfApiRow } from "../api.ts";
 
 /** The id of the element the client hydrates into (shared with prerender). */
 export const AS_OF_SLIDER_ROOT_ID = "as-of-slider-root";
@@ -12,11 +14,20 @@ function pick(dates: readonly string[], index: number): string {
   return dates[clamped] as string;
 }
 
+function apiRowToTimelineRow(row: AsOfApiRow): TimelineRow {
+  return {
+    obligationId: row.obligationId,
+    title: row.title,
+    regime: row.regime,
+    ...(row.status !== undefined ? { status: row.status } : {}),
+    label: row.status !== undefined ? statusLabel(row.status) : "—",
+  };
+}
+
 /**
- * The as-of-date slider (ADR-0003 made visible). Two controls — a valid-time
- * date and a transaction-time ("as we knew it") date — drive a live resolution
- * of each obligation's status. Defaults to the most recent of each so the
- * prerendered HTML and the hydrated client agree on the initial render.
+ * The as-of-date slider (ADR-0003 made visible). Renders from seed data on
+ * first paint (prerender-compatible), then calls /api/as-of on each slider
+ * move so the rows reflect live corpus state.
  */
 export function AsOfSlider(props: {
   /** Histories to resolve; defaults to the v1 California seed histories. */
@@ -34,7 +45,30 @@ export function AsOfSlider(props: {
 
   const validOn = pick(validDates, validIdx);
   const knownAsOf = pick(knowledgeDates, knowledgeIdx);
-  const rows = resolveRows(histories, { validOn, knownAsOf });
+
+  // Seed-computed rows are the initial and fallback state.
+  const localRows = resolveRows(histories, { validOn, knownAsOf });
+  const [apiRows, setApiRows] = useState<TimelineRow[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const rows = apiRows ?? localRows;
+
+  // Call /api/as-of whenever the selected date strings change (including on mount).
+  useEffect(() => {
+    setLoading(true);
+    fetchAsOf(validOn, knownAsOf)
+      .then((data) => {
+        if (data.rows !== undefined) {
+          setApiRows(data.rows.map(apiRowToTimelineRow));
+        }
+      })
+      .catch(() => {
+        setApiRows(null);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [validOn, knownAsOf]);
 
   return (
     <>
@@ -60,6 +94,8 @@ export function AsOfSlider(props: {
           />
         </label>
       </div>
+
+      {loading ? <p className="loading" aria-live="polite">Loading…</p> : null}
 
       <table className="asof-table">
         <thead>

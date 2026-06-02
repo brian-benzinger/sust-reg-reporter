@@ -11,17 +11,21 @@ describe("buildPages (ADR-0013)", () => {
     expect(byPath.has("regimes/index.html")).toBe(true);
     expect(byPath.has("scope-checker.html")).toBe(true);
     expect(byPath.has("as-of.html")).toBe(true);
+    expect(byPath.has("sources.html")).toBe(true);
+    expect(byPath.has("diffs.html")).toBe(true);
     expect(byPath.has("status-states.html")).toBe(true);
     expect(byPath.has("methodology.html")).toBe(true);
     for (const o of caRegime.CALIFORNIA_OBLIGATIONS) {
       expect(byPath.has(`regimes/${o.id}.html`)).toBe(true);
     }
-    expect(pages).toHaveLength(6 + caRegime.CALIFORNIA_OBLIGATIONS.length);
+    expect(pages).toHaveLength(8 + caRegime.CALIFORNIA_OBLIGATIONS.length);
   });
 
   it("flags the interactive pages as needing the hydration bundle", () => {
     expect(byPath.get("scope-checker.html")?.withClient).toBe(true);
     expect(byPath.get("as-of.html")?.withClient).toBe(true);
+    expect(byPath.get("sources.html")?.withClient).toBe(true);
+    expect(byPath.get("diffs.html")?.withClient).toBe(true);
     expect(byPath.get("index.html")?.withClient).toBe(false);
     expect(byPath.get("regimes/index.html")?.withClient).toBe(false);
     expect(byPath.get("status-states.html")?.withClient).toBe(false);

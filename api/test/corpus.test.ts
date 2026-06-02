@@ -97,17 +97,167 @@ describe("serveRoute (ADR-0013, ADR-0002)", () => {
     expect(String(r.body.message)).toContain("does-not-exist");
   });
 
-  it("501s the not-yet-implemented features", async () => {
-    for (const path of ["/api/as-of", "/api/scope-check"]) {
-      const r = await serveRoute(reader(), req(path));
-      expect(r.status).toBe(501);
-      expect(String(r.body.message)).toContain("not yet implemented");
-    }
-  });
-
   it("404s an unknown route", async () => {
     const r = await serveRoute(reader(), req("/api/nope"));
     expect(r.status).toBe(404);
     expect(r.body.route).toBe("not-found");
+  });
+});
+
+describe("/scope-check (ADR-0005)", () => {
+  it("marks a large-revenue California company as applicable", async () => {
+    const r = await serveRoute(
+      reader(),
+      req("/api/scope-check", {
+        revenue: "2000000000",
+        jurisdictions: "US-CA",
+        listingStatus: "public-us",
+        fiscalYearEnd: "12-31",
+      }),
+    );
+    expect(r.status).toBe(200);
+    expect(r.body.route).toBe("scope-check");
+    expect(String(r.body.disclaimer)).toContain("Not legal advice");
+    expect(Array.isArray(r.body.results)).toBe(true);
+    expect(typeof r.body.applicableCount).toBe("number");
+    expect(typeof r.body.enforceableCount).toBe("number");
+    // A $2B CA company should clear at least one threshold
+    expect(r.body.applicableCount as number).toBeGreaterThan(0);
+  });
+
+  it("marks a small-revenue company as not applicable", async () => {
+    const r = await serveRoute(
+      reader(),
+      req("/api/scope-check", {
+        revenue: "100000",
+        jurisdictions: "US-CA",
+        listingStatus: "public-us",
+        fiscalYearEnd: "12-31",
+      }),
+    );
+    expect(r.status).toBe(200);
+    expect(r.body.applicableCount).toBe(0);
+    expect(r.body.enforceableCount).toBe(0);
+  });
+
+  it("falls back to zero revenue for a non-numeric value", async () => {
+    const r = await serveRoute(
+      reader(),
+      req("/api/scope-check", {
+        revenue: "not-a-number",
+        jurisdictions: "US-CA",
+        listingStatus: "private",
+        fiscalYearEnd: "12-31",
+      }),
+    );
+    expect(r.status).toBe(200);
+    expect(r.body.applicableCount).toBe(0);
+  });
+
+  it("uses default values when no params are provided", async () => {
+    const r = await serveRoute(reader(), req("/api/scope-check"));
+    expect(r.status).toBe(200);
+    // Defaults: revenue=0, jurisdictions=[], listingStatus=private, fiscalYearEnd=12-31
+    expect(r.body.applicableCount).toBe(0);
+  });
+
+  it("clamps negative revenue to zero", async () => {
+    const r = await serveRoute(
+      reader(),
+      req("/api/scope-check", {
+        revenue: "-500",
+        jurisdictions: "US-CA",
+        listingStatus: "public-us",
+        fiscalYearEnd: "12-31",
+      }),
+    );
+    expect(r.status).toBe(200);
+    // Negative revenue collapses to zero → below all thresholds
+    expect(r.body.applicableCount).toBe(0);
+  });
+
+  it("rejects an unknown listingStatus with 400", async () => {
+    const r = await serveRoute(
+      reader(),
+      req("/api/scope-check", {
+        revenue: "2000000000",
+        jurisdictions: "US-CA",
+        listingStatus: "bogus-status",
+        fiscalYearEnd: "12-31",
+      }),
+    );
+    expect(r.status).toBe(400);
+    expect(String(r.body.message)).toContain("bogus-status");
+  });
+});
+
+describe("/as-of (ADR-0003)", () => {
+  it("returns available slider dates without query params", async () => {
+    const r = await serveRoute(reader(), req("/api/as-of"));
+    expect(r.status).toBe(200);
+    expect(r.body.route).toBe("as-of");
+    expect(String(r.body.disclaimer)).toContain("Not legal advice");
+    expect(Array.isArray(r.body.validDates)).toBe(true);
+    expect(Array.isArray(r.body.knowledgeDates)).toBe(true);
+    expect((r.body.validDates as string[]).length).toBeGreaterThan(0);
+    expect((r.body.knowledgeDates as string[]).length).toBeGreaterThan(0);
+    // Dates are sorted ascending
+    const vd = r.body.validDates as string[];
+    expect(vd).toEqual([...vd].sort());
+  });
+
+  it("returns only dates when knownAsOf is absent", async () => {
+    const r = await serveRoute(
+      reader(),
+      req("/api/as-of", { validOn: "2024-01-01" }), // no knownAsOf
+    );
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.validDates)).toBe(true);
+    expect(r.body.rows).toBeUndefined();
+    expect(r.body.asOf).toBeUndefined();
+  });
+
+  it("resolves rows with undefined status for a date before all histories", async () => {
+    const r = await serveRoute(
+      reader(),
+      req("/api/as-of", { validOn: "2020-01-01", knownAsOf: "2020-01-01" }),
+    );
+    expect(r.status).toBe(200);
+    const rows = r.body.rows as Array<{ obligationId: string; status?: string }>;
+    expect(rows.every((row) => row.status === undefined)).toBe(true);
+  });
+
+  it("resolves obligation rows for a given (validOn, knownAsOf) pair", async () => {
+    const r = await serveRoute(
+      reader(),
+      req("/api/as-of", { validOn: "2024-01-01", knownAsOf: "2025-06-01" }),
+    );
+    expect(r.status).toBe(200);
+    expect(Array.isArray(r.body.rows)).toBe(true);
+    expect(r.body.asOf).toEqual({ validOn: "2024-01-01", knownAsOf: "2025-06-01" });
+    // Should include one row per tracked California obligation
+    expect((r.body.rows as unknown[]).length).toBeGreaterThan(0);
+  });
+
+  it("resolves SB 261 as stayed when known in 2025 but not in mid-2024", async () => {
+    const sb261Id = "ca-sb261-climate-risk-report";
+
+    const knownIn2024 = await serveRoute(
+      reader(),
+      req("/api/as-of", { validOn: "2024-06-01", knownAsOf: "2024-07-01" }),
+    );
+    const knownIn2025 = await serveRoute(
+      reader(),
+      req("/api/as-of", { validOn: "2024-12-15", knownAsOf: "2025-06-01" }),
+    );
+
+    const rows2024 = knownIn2024.body.rows as Array<{ obligationId: string; status?: string }>;
+    const rows2025 = knownIn2025.body.rows as Array<{ obligationId: string; status?: string }>;
+
+    const sb261in2024 = rows2024.find((r) => r.obligationId === sb261Id);
+    const sb261in2025 = rows2025.find((r) => r.obligationId === sb261Id);
+
+    expect(sb261in2024?.status).toBe("in-effect");
+    expect(sb261in2025?.status).toBe("stayed");
   });
 });
