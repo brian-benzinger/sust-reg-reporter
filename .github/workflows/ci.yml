@@ -19,7 +19,13 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       # The serving stack's BucketDeployment stages web/dist as a CDK asset, so
-      # the site must be built before the infra tests synthesize it (ADR-0026).
+      # the site must be built before the infra synthesizes it (ADR-0026).
       - run: npm run build -w web
       # Enforces the per-file coverage gate (95% line / 90% branch, ADR-0019).
       - run: npm test
+      # Synthesize the whole CDK app so the app-level wiring in bin/app.ts and
+      # the synth-time cost-discipline aspects (no costly networking, 14-day log
+      # retention, single region — ADR-0016) are exercised on every PR, not just
+      # the per-stack unit tests. Offline: the stacks are environment-agnostic,
+      # so no AWS credentials are needed.
+      - run: npm run synth --workspace @sust-reg/infra -- --quiet
