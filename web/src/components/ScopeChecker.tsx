@@ -3,7 +3,7 @@ import {
   type ApplicabilityResult,
   type ListingStatus,
   type Obligation,
-  caRegime,
+  ALL_OBLIGATIONS,
 } from "@sust-reg/core";
 import {
   DEFAULT_FORM_INPUT,
@@ -60,7 +60,7 @@ export function ScopeChecker(props: {
   /** Corpus to evaluate against; defaults to the v1 seed obligations. */
   readonly obligations?: readonly Obligation[];
 }): React.ReactElement {
-  const obligations = props.obligations ?? caRegime.CALIFORNIA_OBLIGATIONS;
+  const obligations = props.obligations ?? ALL_OBLIGATIONS;
   const [input, setInput] = useState<ScopeFormInput>(DEFAULT_FORM_INPUT);
   const update = (patch: Partial<ScopeFormInput>): void =>
     setInput((prev) => ({ ...prev, ...patch }));
