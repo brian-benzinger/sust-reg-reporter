@@ -23,6 +23,7 @@ import type { Obligation } from "../applicability.ts";
 import { UNGROUNDED_SNAPSHOT_HASH } from "../citation.ts";
 import type { RegulationStatus } from "../status.ts";
 import type { TemporalFact } from "../temporal.ts";
+import type { ObligationStatusHistory } from "./status-history.ts";
 
 export const SB_253: Obligation = {
   id: "ca-sb253-ghg-disclosure",
@@ -95,14 +96,6 @@ export const SB_261_STATUS_HISTORY: readonly TemporalFact<RegulationStatus>[] = 
   // Recorded in 2025: enforcement was stayed, effective back to 2024-12-01.
   { value: "stayed", validFrom: "2024-12-01", recordedAt: "2025-01-15" },
 ];
-
-/** A regime's status timeline, tied to the obligation it tracks. */
-export interface ObligationStatusHistory {
-  readonly obligationId: string;
-  readonly title: string;
-  readonly regime: string;
-  readonly history: readonly TemporalFact<RegulationStatus>[];
-}
 
 export const CALIFORNIA_STATUS_HISTORIES: readonly ObligationStatusHistory[] = [
   {
