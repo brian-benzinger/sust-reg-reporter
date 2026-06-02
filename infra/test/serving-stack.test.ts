@@ -40,6 +40,26 @@ describe("ServingStack (ADR-0013, ADR-0023)", () => {
     });
   });
 
+  it("grants the api Lambda least-privilege DSQL: DbConnect, never DbConnectAdmin", () => {
+    t.hasResourceProperties("AWS::IAM::Policy", {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({ Action: "dsql:DbConnect" }),
+        ]),
+      }),
+    });
+    const policies = t.findResources("AWS::IAM::Policy");
+    const json = JSON.stringify(policies);
+    expect(json).toContain("dsql:DbConnect");
+    expect(json).not.toContain("dsql:DbConnectAdmin");
+  });
+
+  it("connects the api Lambda as the read-only api_reader role", () => {
+    t.hasResourceProperties("AWS::Lambda::Function", {
+      Environment: { Variables: Match.objectLike({ DSQL_DB_ROLE: "api_reader" }) },
+    });
+  });
+
   it("fronts both the site and /api/* with a single CloudFront distribution", () => {
     t.resourceCountIs("AWS::CloudFront::Distribution", 1);
     t.hasResourceProperties("AWS::CloudFront::Distribution", {

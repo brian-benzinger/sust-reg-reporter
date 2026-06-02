@@ -81,16 +81,17 @@ export class ServingStack extends cdk.Stack {
         retention: logs.RetentionDays.TWO_WEEKS,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
       }),
-      environment: { DSQL_ENDPOINT: dsqlEndpoint },
+      environment: { DSQL_ENDPOINT: dsqlEndpoint, DSQL_DB_ROLE: "api_reader" },
       bundling: { minify: true, externalModules: ["pg-native"] },
     });
 
-    // The API is read-only over DSQL. DbConnectAdmin connects as the admin role
-    // for now; a least-privilege read-only DB role is the priority hardening for
-    // this public-facing read path (queries are parameterized in the meantime).
+    // The API connects as the least-privilege, SELECT-only `api_reader` database
+    // role (provisioned via the admin ingestor's dbGrants path and mapped to this
+    // Lambda's role with `AWS IAM GRANT`). Only `dsql:DbConnect` — never the admin
+    // action — so this public-facing read path has no write capability (ADR-0012).
     apiFn.addToRolePolicy(
       new iam.PolicyStatement({
-        actions: ["dsql:DbConnect", "dsql:DbConnectAdmin"],
+        actions: ["dsql:DbConnect"],
         resources: [dsqlClusterArn],
       }),
     );
