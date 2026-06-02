@@ -1,5 +1,5 @@
 import { InvokeCommand, LambdaClient } from "@aws-sdk/client-lambda";
-import { caRegime } from "@sust-reg/core";
+import { ALL_OBLIGATIONS, ALL_STATUS_HISTORIES } from "@sust-reg/core";
 import { contentHash } from "../hash.ts";
 import { ingestSource, type IngestDeps, type IngestResult } from "../ingest.ts";
 import type { DiffRequest } from "../diffjob.ts";
@@ -80,11 +80,7 @@ export async function handler(event: IngestorEvent = {}): Promise<unknown> {
 async function runCorpusSeed(): Promise<{ ok: boolean; seeded: SeedResult[] }> {
   const seeded = await withDsql(async (client) => {
     await ensureSchema(client);
-    return seedCorpus(
-      dsqlSeedDeps(client),
-      caRegime.CALIFORNIA_OBLIGATIONS,
-      caRegime.CALIFORNIA_STATUS_HISTORIES,
-    );
+    return seedCorpus(dsqlSeedDeps(client), ALL_OBLIGATIONS, ALL_STATUS_HISTORIES);
   });
   return { ok: true, seeded };
 }
