@@ -46,9 +46,17 @@ export function Home(props: {
           what we believed was in effect, on any date.
         </li>
         <li>
-          <strong>Diff view</strong> &mdash; change detection made visible:
-          meaning-aware diffs between versions of a source.{" "}
-          <span className="soon">(coming soon)</span>
+          <strong>
+            <a href="/diffs.html">Change history</a>
+          </strong>{" "}
+          &mdash; change detection made visible: meaning-aware diffs between
+          versions of a tracked source.
+        </li>
+        <li>
+          <strong>
+            <a href="/sources.html">Tracked sources</a>
+          </strong>{" "}
+          &mdash; the primary regulatory sources the corpus currently ingests.
         </li>
       </ul>
     </>
