@@ -10,20 +10,17 @@ import {
   aws_lambda as lambda,
   aws_logs as logs,
   aws_s3 as s3,
+  aws_s3_deployment as s3deploy,
   aws_ssm as ssm,
 } from "aws-cdk-lib";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import type { Construct } from "constructs";
 
-const API_HANDLER = join(
-  dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "..",
-  "api",
-  "src",
-  "handlers",
-  "api.ts",
-);
+const HERE = dirname(fileURLToPath(import.meta.url));
+const API_HANDLER = join(HERE, "..", "..", "api", "src", "handlers", "api.ts");
+// The prerendered static site (`npm run build -w web` → web/dist). Must be built
+// before `cdk synth`/`deploy`, since BucketDeployment stages it as an asset.
+const WEB_DIST = join(HERE, "..", "..", "web", "dist");
 
 /**
  * Serving layer (ADR-0013, ADR-0023): a single CloudFront distribution fronting
@@ -36,9 +33,11 @@ const API_HANDLER = join(
  * (ADR-0023, ADR-0016). Reads are served statically; the API is reserved for the
  * three interactive features.
  *
- * The web bucket is private — reachable only through CloudFront. Site content is
- * published with `aws s3 sync` after deploy, kept out of CDK so there is no
- * deployment helper Lambda with an unbounded log group.
+ * The web bucket is private — reachable only through CloudFront. The prerendered
+ * site (web/dist) is published as part of `cdk deploy` via a BucketDeployment,
+ * which also invalidates the CloudFront cache; its helper Lambda is given an
+ * explicit 14-day log group so the deploy stays inside the cost envelope
+ * (ADR-0016, ADR-0026).
  */
 export class ServingStack extends cdk.Stack {
   readonly webBucket: s3.IBucket;
@@ -139,9 +138,25 @@ export class ServingStack extends cdk.Stack {
     });
     this.distributionDomainName = distribution.distributionDomainName;
 
+    // Publish the prerendered site to the bucket and invalidate CloudFront as
+    // part of `cdk deploy` (ADR-0026). `prune` removes objects no longer in the
+    // build (like `aws s3 sync --delete`); the helper Lambda gets an explicit
+    // 14-day log group so it does not bill silently (ADR-0016).
+    new s3deploy.BucketDeployment(this, "DeployWebSite", {
+      sources: [s3deploy.Source.asset(WEB_DIST)],
+      destinationBucket: webBucket,
+      distribution,
+      distributionPaths: ["/*"],
+      prune: true,
+      logGroup: new logs.LogGroup(this, "WebDeployLogGroup", {
+        retention: logs.RetentionDays.TWO_WEEKS,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+      }),
+    });
+
     new cdk.CfnOutput(this, "WebBucketName", {
       value: webBucket.bucketName,
-      description: "Private static-site bucket; sync the web build here.",
+      description: "Private static-site bucket; published by BucketDeployment.",
     });
     new cdk.CfnOutput(this, "ApiEndpoint", {
       value: httpApi.apiEndpoint,
