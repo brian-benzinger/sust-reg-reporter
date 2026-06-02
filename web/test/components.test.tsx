@@ -45,6 +45,9 @@ describe("Layout", () => {
       </Layout>,
     );
     expect(html).toContain("<title>T</title>");
+    // The leaf favicon is linked in the head and rendered inline in the brand.
+    expect(html).toContain('rel="icon" type="image/svg+xml" href="/leaf.svg"');
+    expect(html).toContain('class="leaf-icon"');
     expect(html).toContain('name="description" content="D"');
     expect(html).toContain('rel="canonical" href="/x.html"');
     expect(html).toContain('src="/app.js"');
