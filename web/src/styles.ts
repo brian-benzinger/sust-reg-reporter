@@ -674,6 +674,22 @@ table.diffs-table tbody tr:hover { background: var(--surface); }
   .loading::before { animation-duration: 2s; }
   html { scroll-behavior: auto; }
 }
+/* The as-of table refreshes in place; its loading indicator floats over the
+   top-right corner (absolute, out of flow) so the table never shifts down and
+   back as fetches resolve on each slider move. */
+.asof-results { position: relative; }
+.asof-updating {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-sm);
+}
 @keyframes srr-spin { to { transform: rotate(360deg); } }
 
 .error {
