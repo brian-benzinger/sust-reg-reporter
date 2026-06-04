@@ -95,32 +95,41 @@ export function AsOfSlider(props: {
         </label>
       </div>
 
-      {loading ? <p className="loading" aria-live="polite">Loading…</p> : null}
+      {/* The indicator floats over the table rather than sitting above it, so
+          the table never reflows as fetches resolve — no layout shift or
+          "jump" when the sliders move (the rows update in place). */}
+      <div className="asof-results">
+        {loading ? (
+          <span className="loading asof-updating" role="status" aria-live="polite">
+            Updating…
+          </span>
+        ) : null}
 
-      <table className="asof-table">
-        <thead>
-          <tr>
-            <th>Obligation</th>
-            <th>Regime</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.obligationId}>
-              <td>{row.title}</td>
-              <td>{row.regime}</td>
-              <td>
-                {row.status !== undefined ? (
-                  <StatusBadge status={row.status} label={row.label} />
-                ) : (
-                  <span className="muted">{row.label}</span>
-                )}
-              </td>
+        <table className="asof-table">
+          <thead>
+            <tr>
+              <th>Obligation</th>
+              <th>Regime</th>
+              <th>Status</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.obligationId}>
+                <td>{row.title}</td>
+                <td>{row.regime}</td>
+                <td>
+                  {row.status !== undefined ? (
+                    <StatusBadge status={row.status} label={row.label} />
+                  ) : (
+                    <span className="muted">{row.label}</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </>
   );
 }
