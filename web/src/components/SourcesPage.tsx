@@ -41,7 +41,7 @@ export function SourcesIsland(): React.ReactElement {
             <td>{s.name}</td>
             <td>{s.authority}</td>
             <td>{s.versions}</td>
-            <td>{s.latestRecordedAt ?? "—"}</td>
+            <td>{s.latestRecordedAt ?? "n/a"}</td>
           </tr>
         ))}
       </tbody>

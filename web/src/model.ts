@@ -35,7 +35,7 @@ const STATUS_LABELS: Record<RegulationStatus, string> = {
  * enforcement paused" distinction (ADR-0006).
  */
 const STATUS_DESCRIPTIONS: Record<RegulationStatus, string> = {
-  proposed: "Not yet law — proposed and open for comment.",
+  proposed: "Not yet law, proposed and open for comment.",
   "in-effect": "Legally in force.",
   enforced: "In force and actively enforced.",
   stayed: "In force, but enforcement is currently paused.",
@@ -52,6 +52,11 @@ export function statusDescription(status: RegulationStatus): string {
 /** Format a USD amount the same way the applicability engine does. */
 export function formatUsd(amount: number): string {
   return `$${amount.toLocaleString("en-US")}`;
+}
+
+/** Pluralize a noun by count: `plural(1, "regime")` is "regime", `plural(3, …)` is "regimes". */
+export function plural(n: number, noun: string): string {
+  return n === 1 ? noun : `${noun}s`;
 }
 
 /**

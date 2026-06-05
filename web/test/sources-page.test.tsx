@@ -42,7 +42,7 @@ describe("SourcesIsland", () => {
     expect(screen.getByText("2026-05-31T00:00:00Z")).toBeTruthy();
   });
 
-  it("renders a dash when latestRecordedAt is null", async () => {
+  it("renders n/a when latestRecordedAt is null", async () => {
     vi.mocked(fetchSources).mockResolvedValue({
       sources: [
         {
@@ -58,7 +58,7 @@ describe("SourcesIsland", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    expect(screen.getByText("—")).toBeTruthy();
+    expect(screen.getByText("n/a")).toBeTruthy();
   });
 
   it("shows an error message when fetchSources rejects", async () => {

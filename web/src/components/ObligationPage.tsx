@@ -20,7 +20,7 @@ export function ObligationPage(props: {
       <dl className="kv">
         <dt>Status</dt>
         <dd>
-          {view.statusLabel} &mdash; {view.statusDescription}
+          {view.statusLabel}: {view.statusDescription}
         </dd>
         {view.firstReportingDeadline !== undefined ? (
           <>

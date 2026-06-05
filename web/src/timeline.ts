@@ -74,7 +74,7 @@ export function resolveRows(
       title: entry.title,
       regime: entry.regime,
       ...(status !== undefined ? { status } : {}),
-      label: status !== undefined ? statusLabel(status) : "—",
+      label: status !== undefined ? statusLabel(status) : "n/a",
     };
   });
 }

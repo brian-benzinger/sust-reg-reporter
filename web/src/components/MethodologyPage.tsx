@@ -22,8 +22,8 @@ export function MethodologyPage(): React.ReactElement {
         This site reports source text, citations, effective dates, and
         per-company applicability metadata. It does not interpret regulations,
         weigh how they apply to your facts, or offer an opinion. Applicability
-        results are threshold-derived statements &mdash; &ldquo;revenue is at or
-        above $X&rdquo; &mdash; with the reasons shown, never advice about what
+        results are threshold-derived statements, &ldquo;revenue is at or
+        above $X&rdquo;, with the reasons shown, never advice about what
         to do.
       </p>
 
@@ -52,8 +52,8 @@ export function MethodologyPage(): React.ReactElement {
 
       <h2>Authoritative sources</h2>
       <p>
-        The intent is to ingest from official sources and APIs &mdash; the
-        Federal Register, EUR-Lex, SEC EDGAR, the CARB docket &mdash; with
+        The intent is to ingest from official sources and APIs (the
+        Federal Register, EUR-Lex, SEC EDGAR, the CARB docket) with
         provenance, rather than scraping brittle HTML. Changes are detected by
         content hash so that costly, meaning-aware diffing runs only when a
         source actually changes.

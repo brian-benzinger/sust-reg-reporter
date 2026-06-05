@@ -18,7 +18,7 @@ export function StatusStatesPage(): React.ReactElement {
     <>
       <h1>Regulation status states</h1>
       <p className="lead">
-        A regulation&rsquo;s status is an explicit lifecycle state &mdash; not a
+        A regulation&rsquo;s status is an explicit lifecycle state, not a
         single on/off flag. Two separate questions matter: is it on the books,
         and is enforcement currently active?
       </p>
@@ -47,7 +47,7 @@ export function StatusStatesPage(): React.ReactElement {
       </table>
       <h2>Why &ldquo;stayed&rdquo; is its own state</h2>
       <p>
-        A rule can be law while its enforcement is paused &mdash; for example,
+        A rule can be law while its enforcement is paused, for example,
         pending an appeal. California SB 261 is the canonical case. A tool that
         collapses this into &ldquo;active&rdquo; or &ldquo;inactive&rdquo; gets
         it wrong in both directions: it either overstates a paused obligation or
