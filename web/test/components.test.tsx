@@ -56,6 +56,10 @@ describe("Layout", () => {
     // Reference pages are reachable from the footer on every page.
     expect(html).toContain('href="/status-states.html"');
     expect(html).toContain('href="/methodology.html"');
+    // Footer carries the copyright and the author's source/social links.
+    expect(html).toContain("2026 Brian Benzinger");
+    expect(html).toContain('href="https://github.com/brian-benzinger"');
+    expect(html).toContain('href="https://www.linkedin.com/in/brianbenzinger/"');
   });
 
   it("omits optional head tags and the script by default", () => {
