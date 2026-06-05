@@ -3,11 +3,14 @@
 > Version-tracked climate disclosure regulations with point-in-time history,
 > sourced citations, and per-company applicability.
 
-**Status:** the full serverless backend is **built, tested, and deployed live**
-to AWS (us-west-2), and the change-detection pipeline runs end to end. The
-`core` domain logic, the prerendered web app, the four-stack CDK infrastructure,
-and the `semdiff` integration are all in place; what remains is the connective
-tissue (source adapters, S3↔DSQL persistence) and the corpus-backed API. See
+**Status:** **built, tested, and deployed live** to AWS (us-west-2), end to end.
+The snapshotting pipeline ingests authoritative sources, content-hash-gates each
+fetch, and runs `semdiff` only on change; the bitemporal corpus (obligations,
+append-only status history, and append-only grounding facts) is persisted in
+Aurora DSQL and served through a thin API behind CloudFront; and the prerendered
+web app reads that live corpus. Obligations are **grounded** to their ingested
+snapshots ([ADR-0028](adr/0028-ground-obligations-via-append-only-grounding-facts.md)),
+so the grounded vs. ungrounded distinction is visible across the site. See
 [Implementation status](#implementation-status) for specifics, and [`adr/`](adr/)
 for the rationale behind every decision.
 
@@ -100,21 +103,31 @@ and the differ kept strictly async — never publicly invokable (ADR-0007).
 ([ADR-0013](adr/0013-static-generation-thin-api.md),
 [ADR-0021](adr/0021-react-typescript-webpack-web-app.md)): React components
 rendered from the `core` corpus, **prerendered to static HTML** with webpack so
-pages stay indexable and Always-Free to host. It ships a landing page, a regimes
-index, a page per obligation (status, applicability criteria, first reporting
-deadline, grounded/ungrounded citation flag), and two **client-side interactive
-features** that hydrate over the prerendered markup: a **Scope Checker** that
-runs the applicability engine in the browser, and an **as-of-date slider** that
-runs the bitemporal resolver to show how a status reads on a chosen valid date
-versus a chosen knowledge date. It also carries two reference pages — a
-**status-states explainer** (ADR-0006) and a **methodology** page on citation
-grounding and non-interpretive scope (ADR-0002, ADR-0004). View-model,
-scope-check, and timeline logic are pure and held to the same per-file coverage
-gate; the webpack config and the client/prerender entry points are glue.
+pages stay indexable and Always-Free to host, then **hydrated as islands** over
+the live API. It ships a landing page, a regimes index, a page per obligation
+(status, applicability criteria, first reporting deadline, and a **live
+grounding badge** that reflects the real `obligation_groundings` table), a
+**tracked-sources** page, a **change-history** (diffs) page, and the two
+flagship interactive features: a **Scope Checker** that runs the applicability
+engine in the browser, and an **as-of-date slider** that runs the bitemporal
+resolver to show how a status reads on a chosen valid date versus a chosen
+knowledge date (with per-row grounding provenance). It also carries two
+reference pages, a **status-states explainer** (ADR-0006) and a **methodology**
+page (ADR-0002, ADR-0004), plus dark mode
+([ADR-0029](adr/0029-dark-mode-theming.md)) on a token-driven design system
+([ADR-0030](adr/0030-token-driven-design-system.md)). View-model, scope-check,
+timeline, and grounding-overlay logic are pure and held to the same per-file
+coverage gate; the webpack config and the client/prerender entry points are glue.
 
-Still to come: the source adapters (ADR-0008) and the ingestor's S3 write; the
-differ reading snapshot text from S3 and persisting the `StructuredDiff` to
-DSQL; the corpus-backed API endpoints; and the web↔pipeline regeneration hook.
+The pipeline, the persisted bitemporal corpus, the corpus-backed API, and
+obligation grounding are all live. The thin API serves `/api/sources`,
+`/api/diff`, `/api/scope-check`, `/api/as-of`, and `/api/grounding`, and the web
+app reads it directly (with a least-privilege, read-only DSQL role,
+[ADR-0025](adr/0025-least-privilege-database-roles.md), and CDK-managed site
+deployment, [ADR-0026](adr/0026-cdk-managed-web-deployment.md)). What's next:
+more source adapters ([ADR-0008](adr/0008-authoritative-source-ingestion.md))
+beyond the seeded set, span-level grounding (ADR-0028 §4), and ISSB once an IFRS
+licence is in place ([ADR-0027](adr/0027-issb-deferred-pending-ifrs-licensing.md)).
 
 ```sh
 npm test                            # unit tests + per-file coverage gate
@@ -129,11 +142,14 @@ Three high-churn, well-documented regimes — and no more
 ([ADR-0009](adr/0009-v1-scope-three-regimes.md)):
 
 - **California SB 253 and SB 261**
-- **EU CSRD** (post-Omnibus)
-- **ISSB S1 and S2**
+- **EU CSRD** (post-Omnibus, both waves)
+- **ISSB S1 and S2**, *deferred from v1* pending an IFRS licence to store and
+  serve the standards text ([ADR-0027](adr/0027-issb-deferred-pending-ifrs-licensing.md)).
 
 This is enough to prove the bitemporal model, the diff engine, and the
-applicability logic without drowning in global coverage.
+applicability logic without drowning in global coverage. SB 261 (law on the
+books while enforcement was stayed) is the canonical bitemporal showcase, and is
+live: it resolves to `stayed` as known in 2025 but `in-effect` as known in 2024.
 
 ## Core design principles
 
@@ -207,9 +223,9 @@ reads don't burn function invocations. A **thin API** is reserved for the three
 interactive features that surface the engineering depth
 ([ADR-0013](adr/0013-static-generation-thin-api.md)):
 
-- an **as-of-date slider** — the bitemporal model made visible,
-- a **scope checker** — the applicability engine made visible,
-- a **diff view** — change detection made visible.
+- an **as-of-date slider** that resolves status across both time axes,
+- a **scope checker** that runs the applicability engine on a company profile,
+- a **diff view** of meaning-aware changes between source versions.
 
 The API is served by an **API Gateway HTTP API behind CloudFront** — the Lambda
 is never publicly exposed and the endpoint is throttled
@@ -275,10 +291,13 @@ The full rationale lives in [`adr/`](adr/). Start with the
 
 ## Open questions
 
-- Verify Aurora DSQL feature support for the bitemporal model in depth (range
-  types, exclusion constraints, foreign keys, and pgvector for semantic search)
-  before relying on them; the cluster is deployed and ACTIVE.
-- Confirm domain availability for the chosen names on a registrar.
+- Aurora DSQL is PostgreSQL-*compatible*, not full Postgres, and its limits were
+  confirmed live: no `jsonb` (JSON is stored as `text`), no sequences/`SERIAL`
+  (uuid + `gen_random_uuid()`), foreign keys are not enforced (integrity is kept
+  in application code), and `GRANT USAGE ON SCHEMA public` is rejected. pgvector
+  for semantic citation search is still unverified.
+- A custom domain (Route53 + an ACM cert in us-east-1 + CloudFront aliases) is
+  planned; registration is the only manual, billable step.
 
 ## Build order — progress
 
@@ -290,10 +309,15 @@ The full rationale lives in [`adr/`](adr/). Start with the
    store + DSQL, snapshotting pipeline, serving layer).
 4. ✅ **Web app** — prerendered static site with a client-side Scope Checker and
    as-of slider.
-5. ⬜ **Pipeline connective tissue** — source adapters, the ingestor's S3 write,
-   and the differ's S3-read + DSQL persist of diffs.
-6. ⬜ **Corpus-backed API** — wire the thin API over the stored corpus and point
-   the web app at the live `/api`.
+5. ✅ **Pipeline connective tissue** — source adapters, the ingestor's S3 write,
+   and the differ's S3-read + DSQL persist of diffs, verified end to end.
+6. ✅ **Corpus-backed API** — the thin API serves the stored corpus and the web
+   app reads the live `/api`, via a least-privilege read-only DSQL role (ADR-0025).
+7. ✅ **Obligation grounding** — append-only grounding facts (ADR-0028) link each
+   obligation to its ingested snapshot; the API and web surface the grounded vs.
+   ungrounded distinction.
+8. ⬜ **Next** — more source adapters (ADR-0008), span-level grounding
+   (ADR-0028 §4), and ISSB once an IFRS licence is in place (ADR-0027).
 
 ## License
 
