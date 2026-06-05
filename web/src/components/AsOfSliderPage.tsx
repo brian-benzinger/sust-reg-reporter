@@ -11,9 +11,8 @@ export function AsOfSliderPage(): React.ReactElement {
     <>
       <h1>As-of-date slider</h1>
       <p className="lead">
-        The bitemporal model made visible: move the dates to see what was in
-        effect on a given day &mdash; and what we believed was in effect, as of
-        our knowledge on another day.
+        Move the dates to see what was in effect on a given day, and what we
+        believed was in effect as of our knowledge on another day.
       </p>
       <div className="notice">{NOT_LEGAL_ADVICE}</div>
       <p>

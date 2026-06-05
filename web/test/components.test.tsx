@@ -93,7 +93,7 @@ describe("content pages", () => {
 
   it("Home reports corpus size and links the scope checker", () => {
     const html = renderToStaticMarkup(<Home groups={groups} />);
-    expect(html).toContain("2 obligation(s) across");
+    expect(html).toContain("2 obligations across");
     expect(html).toContain('href="/scope-checker.html"');
   });
 

@@ -53,10 +53,10 @@ describe("resolveRows", () => {
       validOn: "2024-09-01",
       knownAsOf: "2024-12-31",
     });
-    // A: correction not yet known → in-effect. B: outside its valid range → —.
+    // A: correction not yet known → in-effect. B: outside its valid range → n/a.
     expect(rows[0]).toMatchObject({ status: "in-effect", label: "In effect" });
     expect(rows[1]?.status).toBeUndefined();
-    expect(rows[1]?.label).toBe("—");
+    expect(rows[1]?.label).toBe("n/a");
   });
 
   it("applies a later correction once it is known", () => {

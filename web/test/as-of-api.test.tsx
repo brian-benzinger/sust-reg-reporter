@@ -50,7 +50,7 @@ describe("AsOfSlider (API integration)", () => {
     expect(screen.getByText("Enforced")).toBeTruthy();
   });
 
-  it("renders an em-dash for an API row with no status", async () => {
+  it("renders n/a for an API row with no status", async () => {
     vi.mocked(fetchAsOf).mockResolvedValue({
       validDates: ["2023-01-01"],
       knowledgeDates: ["2023-01-01"],
@@ -64,7 +64,7 @@ describe("AsOfSlider (API integration)", () => {
       await Promise.resolve();
     });
 
-    expect(screen.getByText("—")).toBeTruthy();
+    expect(screen.getByText("n/a")).toBeTruthy();
   });
 
   it("falls back to local rows when fetchAsOf rejects", async () => {

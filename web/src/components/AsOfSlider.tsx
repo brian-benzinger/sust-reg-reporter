@@ -20,7 +20,7 @@ function apiRowToTimelineRow(row: AsOfApiRow): TimelineRow {
     title: row.title,
     regime: row.regime,
     ...(row.status !== undefined ? { status: row.status } : {}),
-    label: row.status !== undefined ? statusLabel(row.status) : "—",
+    label: row.status !== undefined ? statusLabel(row.status) : "n/a",
     ...(row.grounded !== undefined ? { grounded: row.grounded } : {}),
     ...(row.confidence !== undefined ? { confidence: row.confidence } : {}),
     ...(row.snapshotHash !== undefined ? { snapshotHash: row.snapshotHash } : {}),

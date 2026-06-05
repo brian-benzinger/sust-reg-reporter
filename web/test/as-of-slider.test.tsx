@@ -32,8 +32,8 @@ describe("AsOfSlider (interactive)", () => {
     render(<AsOfSlider histories={histories} />);
     // Default valid date 2024-06-01, latest knowledge 2025-01-01 → A is stayed.
     expect(screen.getByText("Stayed")).toBeTruthy();
-    // B is outside its valid range at that date → em dash.
-    expect(screen.getByText("—")).toBeTruthy();
+    // B is outside its valid range at that date → n/a.
+    expect(screen.getByText("n/a")).toBeTruthy();
   });
 
   it("hides a later correction when the knowledge date is rolled back", () => {
