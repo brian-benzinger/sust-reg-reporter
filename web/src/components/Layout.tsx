@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 import { NOT_LEGAL_ADVICE, SITE_NAME } from "../content.ts";
 import { FAVICON_PATH, GitHubIcon, LeafIcon, LinkedInIcon } from "../icon.tsx";
+import { NAV_ID, NAV_INIT_SCRIPT } from "../nav.ts";
 import { STYLESHEET_PATH } from "../styles.ts";
 import { THEME_INIT_SCRIPT } from "../theme.ts";
+import { NavToggle } from "./NavToggle.tsx";
 import { ThemeToggle } from "./ThemeToggle.tsx";
 
 /** Root-relative URL of the hydration bundle emitted by webpack. */
@@ -33,6 +35,9 @@ export function Layout(props: LayoutProps): React.ReactElement {
             there is no flash of the wrong theme; runs on every page, including
             the static ones that never load the hydration bundle. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* Drive the mobile hamburger menu on every page, including the static
+            ones that never load the hydration bundle (nav.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: NAV_INIT_SCRIPT }} />
         <meta
           name="theme-color"
           media="(prefers-color-scheme: light)"
@@ -66,13 +71,18 @@ export function Layout(props: LayoutProps): React.ReactElement {
               <LeafIcon />
               {SITE_NAME}
             </a>
-            <nav>
+            <nav id={NAV_ID} aria-label="Primary">
               <a href="/index.html">Home</a>
               <a href="/regimes/index.html">Regimes</a>
               <a href="/scope-checker.html">Scope checker</a>
               <a href="/as-of.html">As-of date</a>
+              <a href="/diffs.html">Change history</a>
+              <a href="/sources.html">Sources</a>
             </nav>
-            <ThemeToggle />
+            <div className="header-controls">
+              <ThemeToggle />
+              <NavToggle />
+            </div>
           </div>
         </header>
         <main id="main">

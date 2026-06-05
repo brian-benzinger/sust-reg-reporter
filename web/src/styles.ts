@@ -161,7 +161,8 @@ body {
    reduced-motion preference by scoping every transition behind it. */
 @media (prefers-reduced-motion: no-preference) {
   body, header.site, footer.site, .card, .feature-card, .stat, .theme-toggle,
-  .result, .btn, form.scope input, form.scope select, table.data-table tbody tr {
+  .nav-toggle, .result, .btn, form.scope input, form.scope select,
+  table.data-table tbody tr {
     transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease),
       color 0.2s var(--ease), box-shadow 0.2s var(--ease), transform 0.2s var(--ease);
   }
@@ -242,6 +243,57 @@ header.site nav a {
 header.site nav a:hover {
   color: var(--fg);
   background: var(--surface);
+}
+
+/* Theme toggle + hamburger ride together on the right edge of the bar. */
+header.site .header-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* The hamburger is hidden on the wide layout (the full nav bar shows instead);
+   the mobile media query below reveals it and collapses the nav. */
+.nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  color: var(--fg);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  line-height: 0;
+  box-shadow: var(--shadow-sm);
+}
+.nav-toggle:hover { border-color: var(--accent); color: var(--accent); }
+.nav-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---- Mobile header: collapse the nav behind the hamburger --------------
+   Below the breakpoint (mirrored from nav.ts) the tabs no longer fit on one
+   line, so the nav drops to a full-width dropdown panel toggled by the
+   hamburger. The inline script (nav.ts) flips data-nav-open on <html>. */
+@media (max-width: 52rem) {
+  header.site .nav-toggle { display: inline-flex; }
+  header.site .header-controls { margin-left: auto; }
+  header.site nav {
+    order: 3;
+    width: 100%;
+    margin: 0.35rem 0 0;
+    gap: 0.1rem;
+    flex-direction: column;
+    align-items: stretch;
+    display: none;
+  }
+  :root[data-nav-open] header.site nav { display: flex; }
+  header.site nav a {
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+  }
 }
 
 /* Theme toggle (ADR-0029). Carries all three glyphs; CSS reveals the one that
