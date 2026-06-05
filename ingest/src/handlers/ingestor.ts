@@ -3,7 +3,12 @@ import { ALL_OBLIGATIONS, ALL_STATUS_HISTORIES } from "@sust-reg/core";
 import { contentHash } from "../hash.ts";
 import { ingestSource, type IngestDeps, type IngestResult } from "../ingest.ts";
 import type { DiffRequest } from "../diffjob.ts";
-import { seedCorpus, type SeedResult } from "../seed.ts";
+import {
+  groundCorpus,
+  seedCorpus,
+  type GroundResult,
+  type SeedResult,
+} from "../seed.ts";
 import { SOURCES, type SourceConfig } from "../sources.ts";
 import { fetchText } from "../io/fetch.ts";
 import { ping, withDsql } from "../io/db.ts";
@@ -72,22 +77,41 @@ export async function handler(event: IngestorEvent = {}): Promise<unknown> {
   return runIngest();
 }
 
-/**
- * Load the v1 regulation/obligation corpus and its append-only status histories
- * (ADR-0003, ADR-0009). Ensures the schema first, then seeds idempotently — a
- * re-run neither rewrites obligations nor duplicates status facts (ADR-0017).
- */
-async function runCorpusSeed(): Promise<{ ok: boolean; seeded: SeedResult[] }> {
-  const seeded = await withDsql(async (client) => {
-    await ensureSchema(client);
-    return seedCorpus(dsqlSeedDeps(client), ALL_OBLIGATIONS, ALL_STATUS_HISTORIES);
-  });
-  return { ok: true, seeded };
+/** Today as an ISO-8601 `YYYY-MM-DD` string — a grounding's transaction time. */
+function today(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
-async function runIngest(): Promise<{ ok: boolean; results: IngestResult[] }> {
+/**
+ * Load the v1 regulation/obligation corpus and its append-only status histories
+ * (ADR-0003, ADR-0009), then ground each obligation to its source's latest
+ * snapshot (ADR-0028). Ensures the schema first; everything is idempotent — a
+ * re-run neither rewrites obligations, duplicates status facts, nor re-grounds
+ * an unchanged snapshot (ADR-0017).
+ */
+async function runCorpusSeed(): Promise<{
+  ok: boolean;
+  seeded: SeedResult[];
+  grounded: GroundResult[];
+}> {
+  const recordedAt = today();
+  return withDsql(async (client) => {
+    await ensureSchema(client);
+    const deps = dsqlSeedDeps(client);
+    const seeded = await seedCorpus(deps, ALL_OBLIGATIONS, ALL_STATUS_HISTORIES);
+    const grounded = await groundCorpus(deps, ALL_OBLIGATIONS, recordedAt);
+    return { ok: true, seeded, grounded };
+  });
+}
+
+async function runIngest(): Promise<{
+  ok: boolean;
+  results: IngestResult[];
+  grounded: GroundResult[];
+}> {
   const bucket = requireEnv("SNAPSHOT_BUCKET");
-  const results = await withDsql(async (client) => {
+  const recordedAt = today();
+  return withDsql(async (client) => {
     const deps: IngestDeps = {
       fetchText,
       latestVersion: (key) => latestVersion(client, key),
@@ -97,13 +121,21 @@ async function runIngest(): Promise<{ ok: boolean; results: IngestResult[] }> {
       recordVersion: (input) => recordVersion(client, input),
       requestDiff: invokeDiffer,
     };
-    const out: IngestResult[] = [];
+    const results: IngestResult[] = [];
     for (const source of SOURCES) {
-      out.push(await ingestSource(deps, source));
+      results.push(await ingestSource(deps, source));
     }
-    return out;
+    // After any new snapshots are recorded, (re-)ground obligations to their
+    // sources' latest versions. Idempotent: an unchanged source is a no-op, and
+    // a changed source re-grounds automatically as its new version lands
+    // (ADR-0028 §5) — content-hash-gated, so it never re-bills an LLM call.
+    const grounded = await groundCorpus(
+      dsqlSeedDeps(client),
+      ALL_OBLIGATIONS,
+      recordedAt,
+    );
+    return { ok: true, results, grounded };
   });
-  return { ok: true, results };
 }
 
 const DEMO_SOURCE: SourceConfig = {
