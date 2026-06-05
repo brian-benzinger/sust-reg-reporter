@@ -1,5 +1,6 @@
 import type { ReactElement } from "react";
 import type { RegimeGroup } from "../model.ts";
+import { plural } from "../model.ts";
 import { NOT_LEGAL_ADVICE } from "../content.ts";
 
 /** A single feature in the home-page grid. */
@@ -27,7 +28,7 @@ const FEATURES: readonly Feature[] = [
     href: "/scope-checker.html",
     title: "Scope checker",
     blurb:
-      "The applicability engine made visible: enter a company profile and see which obligations apply, why, and by when.",
+      "Enter a company profile and see which obligations apply, why, and by when.",
     icon: (
       <svg {...iconProps}>
         <circle cx="11" cy="11" r="7" />
@@ -39,7 +40,7 @@ const FEATURES: readonly Feature[] = [
     href: "/as-of.html",
     title: "As-of-date slider",
     blurb:
-      "The bitemporal model made visible: what was in effect, and what we believed was in effect, on any date.",
+      "Pick a date to see what was in effect, and a knowledge date to see what we believed at the time.",
     icon: (
       <svg {...iconProps}>
         <circle cx="12" cy="12" r="9" />
@@ -51,7 +52,7 @@ const FEATURES: readonly Feature[] = [
     href: "/diffs.html",
     title: "Change history",
     blurb:
-      "Change detection made visible: meaning-aware diffs between consecutive versions of a tracked source.",
+      "Meaning-aware diffs between consecutive versions of a source, so substantive changes stand out from cosmetic edits.",
     icon: (
       <svg {...iconProps}>
         <path d="M3 6h13M3 6l3-3M3 6l3 3" />
@@ -95,7 +96,7 @@ export function Home(props: {
         </h1>
         <p className="lead">
           Primary-source text, exact citations, effective dates, and per-company
-          applicability &mdash; with point-in-time history of how each rule
+          applicability, with point-in-time history of how each rule
           changed.
         </p>
         <div className="cta-row">
@@ -111,15 +112,19 @@ export function Home(props: {
       <div className="stat-row">
         <div className="stat">
           <span className="num">{obligationCount}</span>
-          <span className="label">obligation(s) across</span>
+          <span className="label">
+            {plural(obligationCount, "obligation")} modeled
+          </span>
         </div>
         <div className="stat">
           <span className="num">{props.groups.length}</span>
-          <span className="label">regime(s) modeled</span>
+          <span className="label">
+            {plural(props.groups.length, "regime")} covered
+          </span>
         </div>
         <div className="stat">
           <span className="num">2</span>
-          <span className="label">time axes (valid + transaction)</span>
+          <span className="label">time axes: valid and transaction</span>
         </div>
       </div>
 
@@ -127,10 +132,11 @@ export function Home(props: {
 
       <h2>Explore the corpus</h2>
       <p>
-        The corpus currently models {obligationCount} obligation(s) across{" "}
-        {props.groups.length} regime(s). Most pages are prerendered to static
-        HTML so reads are fast and indexable; the interactive features run in
-        your browser against the shared applicability engine.
+        The corpus currently models {obligationCount}{" "}
+        {plural(obligationCount, "obligation")} across {props.groups.length}{" "}
+        {plural(props.groups.length, "regime")}. Most pages are prerendered to
+        static HTML so reads are fast and indexable; the interactive features run
+        in your browser against the shared applicability engine.
       </p>
       <div className="feature-grid">
         {FEATURES.map((feature) => (

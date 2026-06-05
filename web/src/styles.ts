@@ -21,7 +21,7 @@
 export const STYLESHEET_PATH = "/styles.css";
 
 export const STYLESHEET = `:root {
-  /* Structural tokens — theme-independent. */
+  /* Structural tokens, theme-independent. */
   --maxw: 64rem;
   --radius-sm: 8px;
   --radius: 12px;
@@ -178,7 +178,7 @@ a:hover { text-decoration: none; }
 
 .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 1.25rem; }
 
-/* Skip link for keyboard users — visually hidden until focused. */
+/* Skip link for keyboard users, visually hidden until focused. */
 .skip-link {
   position: absolute;
   left: -999px;
@@ -699,11 +699,11 @@ table.sources-table tbody tr:hover,
 table.diffs-table tbody tr:hover { background: var(--surface); }
 
 /* Stable geometry so the table never resizes when a slider move swaps a pill
-   badge for plain text — a status "—", or grounded/ungrounded — on refresh.
+   badge for plain text (a status "n/a", or grounded/ungrounded) on refresh.
    Each body cell reserves a fixed row height and centers its content, so a
-   badge and a dash occupy the same space (no vertical jump). Reserved minimum
-   widths on the Status and Grounding columns keep the layout from reflowing
-   horizontally as badge widths change. */
+   badge and plain text occupy the same space (no vertical jump). Reserved
+   minimum widths on the Status and Grounding columns keep the layout from
+   reflowing horizontally as badge widths change. */
 table.asof-table td {
   height: 3rem;
   padding-top: 0;
