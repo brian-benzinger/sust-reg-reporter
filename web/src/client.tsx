@@ -21,6 +21,14 @@ import {
   DiffsIsland,
   DIFFS_ROOT_ID,
 } from "./components/DiffsPage.tsx";
+import {
+  RegimesIsland,
+  REGIMES_ROOT_ID,
+} from "./components/RegimesIsland.tsx";
+import {
+  ObligationGroundingBadge,
+  OBLIGATION_GROUNDING_ROOT_ID,
+} from "./components/ObligationGroundingBadge.tsx";
 
 function hydrateIsland(id: string, element: ReactElement): void {
   const container = document.getElementById(id);
@@ -33,3 +41,16 @@ hydrateIsland(SCOPE_CHECKER_ROOT_ID, <ScopeChecker />);
 hydrateIsland(AS_OF_SLIDER_ROOT_ID, <AsOfSlider />);
 hydrateIsland(SOURCES_ROOT_ID, <SourcesIsland />);
 hydrateIsland(DIFFS_ROOT_ID, <DiffsIsland />);
+hydrateIsland(REGIMES_ROOT_ID, <RegimesIsland />);
+
+// The obligation page badge mounts with the id read from its data attribute, so
+// the single island serves every per-obligation page.
+const obligationRoot = document.getElementById(OBLIGATION_GROUNDING_ROOT_ID);
+if (obligationRoot !== null) {
+  hydrateRoot(
+    obligationRoot,
+    <ObligationGroundingBadge
+      obligationId={obligationRoot.dataset.obligationId ?? ""}
+    />,
+  );
+}

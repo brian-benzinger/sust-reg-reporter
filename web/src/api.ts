@@ -92,6 +92,29 @@ export async function fetchAsOf(
 }
 
 // ---------------------------------------------------------------------------
+// /grounding
+// ---------------------------------------------------------------------------
+
+/** The current grounding for one grounded obligation (ADR-0028). */
+export interface GroundingApiRow {
+  readonly obligationId: string;
+  readonly grounded: boolean;
+  readonly confidence?: GroundingConfidence;
+  readonly snapshotHash?: string;
+  readonly retrievedAt?: string;
+}
+
+export interface GroundingApiResult {
+  /** One entry per grounded obligation; ungrounded ones are absent. */
+  readonly groundings: readonly GroundingApiRow[];
+}
+
+/** Fetch the current grounding for every grounded obligation, keyed by id. */
+export async function fetchGrounding(): Promise<GroundingApiResult> {
+  return getJson<GroundingApiResult>("/grounding");
+}
+
+// ---------------------------------------------------------------------------
 // /sources
 // ---------------------------------------------------------------------------
 

@@ -5,6 +5,7 @@ import {
   fetchAsOf,
   fetchSources,
   fetchDiffs,
+  fetchGrounding,
 } from "../src/api.ts";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -86,6 +87,31 @@ describe("fetchAsOf", () => {
   it("throws on a non-ok response", async () => {
     mockFetch({}, 500);
     await expect(fetchAsOf()).rejects.toThrow("HTTP 500");
+  });
+});
+
+describe("fetchGrounding", () => {
+  it("calls /api/grounding with no query string", async () => {
+    mockFetch({
+      groundings: [
+        {
+          obligationId: "ca-sb261-climate-risk-report",
+          grounded: true,
+          confidence: "high",
+          snapshotHash: "sha256:x",
+          retrievedAt: "2026-05-31",
+        },
+      ],
+    });
+    const result = await fetchGrounding();
+    expect(result.groundings).toHaveLength(1);
+    expect(result.groundings[0]?.confidence).toBe("high");
+    expect(fetchedUrl()).toBe("/api/grounding");
+  });
+
+  it("throws on a non-ok response", async () => {
+    mockFetch({}, 500);
+    await expect(fetchGrounding()).rejects.toThrow("HTTP 500");
   });
 });
 

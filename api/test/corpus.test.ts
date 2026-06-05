@@ -162,6 +162,40 @@ describe("serveRoute (ADR-0013, ADR-0002)", () => {
   });
 });
 
+describe("/grounding (ADR-0028)", () => {
+  it("returns the current grounding for every grounded obligation", async () => {
+    const r = await serveRoute(reader(), req("/api/grounding"));
+    expect(r.status).toBe(200);
+    expect(r.body.route).toBe("grounding");
+    const groundings = r.body.groundings as Array<{
+      obligationId: string;
+      grounded: boolean;
+      confidence: string;
+      snapshotHash: string;
+      retrievedAt: string;
+    }>;
+    // Only SB 261 has a grounding fact → one entry, pinned to its latest snapshot.
+    expect(groundings).toEqual([
+      {
+        obligationId: "ca-sb261-climate-risk-report",
+        grounded: true,
+        confidence: "high",
+        snapshotHash: "sha256:current",
+        retrievedAt: "2026-05-31",
+      },
+    ]);
+  });
+
+  it("returns an empty list when nothing is grounded", async () => {
+    const r = await serveRoute(
+      reader({ groundingHistories: async () => [] }),
+      req("/api/grounding"),
+    );
+    expect(r.status).toBe(200);
+    expect(r.body.groundings).toEqual([]);
+  });
+});
+
 describe("/scope-check (ADR-0005)", () => {
   it("marks a large-revenue California company as applicable", async () => {
     const r = await serveRoute(

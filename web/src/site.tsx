@@ -12,6 +12,7 @@ import { Home } from "./components/Home.tsx";
 import { MethodologyPage } from "./components/MethodologyPage.tsx";
 import { ObligationPage } from "./components/ObligationPage.tsx";
 import { RegimesIndex } from "./components/RegimesIndex.tsx";
+import { REGIMES_ROOT_ID } from "./components/RegimesIsland.tsx";
 import { ScopeCheckerPage } from "./components/ScopeCheckerPage.tsx";
 import { SourcesPage } from "./components/SourcesPage.tsx";
 import { StatusStatesPage } from "./components/StatusStatesPage.tsx";
@@ -47,8 +48,14 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
       title: "Regimes — sust-reg-reporter",
       description: "Disclosure obligations in the v1 corpus, grouped by regime.",
       canonicalPath: "/regimes/index.html",
-      withClient: false,
-      node: <RegimesIndex groups={groups} />,
+      // Hydrated to overlay live grounding (ADR-0028); the prerendered markup
+      // inside the mount matches the island's first (seed) render.
+      withClient: true,
+      node: (
+        <div id={REGIMES_ROOT_ID}>
+          <RegimesIndex groups={groups} />
+        </div>
+      ),
     },
     {
       path: "scope-checker.html",
@@ -113,7 +120,8 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
       title: `${view.title} — ${view.regime}`,
       description: `${view.regime}: ${view.title}. Status: ${view.statusLabel}.`,
       canonicalPath: view.href,
-      withClient: false,
+      // Hydrated to overlay live grounding on the citation badge (ADR-0028).
+      withClient: true,
       node: <ObligationPage view={view} />,
     });
   }
