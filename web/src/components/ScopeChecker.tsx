@@ -123,6 +123,7 @@ export function ScopeChecker(props: {
         <div className="fields">
           <label>
             Total annual revenue (USD)
+            <span className="hint">gross annual revenue, e.g. 500000000</span>
             <input
               type="number"
               min="0"
@@ -141,6 +142,7 @@ export function ScopeChecker(props: {
           </label>
           <label>
             Listing status
+            <span className="hint">private, or where the shares are listed</span>
             <select
               value={input.listingStatus}
               onChange={(e) => update({ listingStatus: e.target.value })}
@@ -154,6 +156,7 @@ export function ScopeChecker(props: {
           </label>
           <label>
             Fiscal year end (MM-DD)
+            <span className="hint">month and day, e.g. 12-31</span>
             <input
               type="text"
               value={input.fiscalYearEnd}
@@ -162,6 +165,13 @@ export function ScopeChecker(props: {
           </label>
         </div>
       </form>
+
+      {/* Reserved-height status row directly under the form: the loading
+          indicator toggles in place here, so the summary and result cards
+          below never shift as values change and fetches resolve. */}
+      <div className="scope-status" role="status" aria-live="polite">
+        {apiLoading ? <span className="loading">Checking…</span> : null}
+      </div>
 
       {errors.length > 0 ? (
         <div className="errors" role="alert">
@@ -173,8 +183,6 @@ export function ScopeChecker(props: {
           </ul>
         </div>
       ) : null}
-
-      {apiLoading ? <p className="loading" aria-live="polite">Checking…</p> : null}
 
       <p className="summary">
         {view.applicableCount} of {view.results.length} obligation(s) apply;{" "}

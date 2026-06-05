@@ -585,12 +585,14 @@ form.scope .fields {
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: 1rem 1.25rem;
 }
-form.scope label { display: block; font-weight: 600; font-size: 0.95rem; }
-form.scope .hint { display: block; font-weight: 400; color: var(--muted); font-size: 0.82rem; }
+/* Flex column with the input pushed to the bottom (margin-top: auto), so every
+   field's input aligns on the same row whether or not its hint wraps. */
+form.scope label { display: flex; flex-direction: column; font-weight: 600; font-size: 0.95rem; }
+form.scope .hint { font-weight: 400; color: var(--muted); font-size: 0.82rem; margin: 0.1rem 0 0.4rem; }
 form.scope input,
 form.scope select {
   width: 100%;
-  margin-top: 0.4rem;
+  margin-top: auto;
   padding: 0.55rem 0.7rem;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
@@ -604,6 +606,11 @@ form.scope select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 }
+
+/* Fixed-height row that holds the "Checking…" indicator. Reserving the height
+   means the indicator appears and disappears in place without nudging the
+   summary or result cards below it on every value change. */
+.scope-status { min-height: 1.45rem; margin: 0.5rem 0 0.25rem; }
 
 .errors {
   border: 1px solid var(--warn-border);
