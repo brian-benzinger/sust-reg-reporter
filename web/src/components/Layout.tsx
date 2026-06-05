@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { NOT_LEGAL_ADVICE, SITE_NAME } from "../content.ts";
-import { FAVICON_PATH, LeafIcon } from "../icon.tsx";
+import { FAVICON_PATH, GitHubIcon, LeafIcon, LinkedInIcon } from "../icon.tsx";
 import { STYLESHEET_PATH } from "../styles.ts";
 import { THEME_INIT_SCRIPT } from "../theme.ts";
 import { ThemeToggle } from "./ThemeToggle.tsx";
@@ -91,6 +91,27 @@ export function Layout(props: LayoutProps): React.ReactElement {
               Version-tracked climate disclosure regulations &middot;
               primary-source pinned.
             </p>
+            <div className="footer-meta">
+              <p className="copyright">&copy; 2026 Brian Benzinger</p>
+              <nav className="footer-social" aria-label="Author links">
+                <a
+                  href="https://github.com/brian-benzinger"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="GitHub"
+                >
+                  <GitHubIcon />
+                </a>
+                <a
+                  href="https://www.linkedin.com/in/brianbenzinger/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="LinkedIn"
+                >
+                  <LinkedInIcon />
+                </a>
+              </nav>
+            </div>
           </div>
         </footer>
       </body>
