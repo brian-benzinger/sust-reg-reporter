@@ -26,7 +26,7 @@ for the rationale behind every decision.
 A version-tracked corpus of climate and sustainability **disclosure**
 regulations, exposed primarily through a website and a thin API.
 
-The differentiating feature is **tracking how regulations change over time** —
+The differentiating feature is **tracking how regulations change over time**:
 point-in-time history and structured, meaning-aware diffs. It is deliberately
 **not** an emissions calculator and **not** a generic scraper. The
 emissions-calculator space is saturated; the regulation change-tracking space
@@ -38,7 +38,7 @@ posture and the source of trust.
 
 ## The two repositories
 
-This project is built as **two repositories** — a deliberate target, not an
+This project is built as **two repositories**: a deliberate target, not an
 interim state ([ADR-0001](adr/0001-two-repo-structure.md)).
 
 | Repo | Tagline | Role |
@@ -64,31 +64,31 @@ sust-reg-reporter/
 
 ### Implementation status
 
-**Domain logic** — [`core/`](core/) ([ADR-0018](adr/0018-shared-core-domain-workspace.md)):
+**Domain logic**: [`core/`](core/) ([ADR-0018](adr/0018-shared-core-domain-workspace.md)):
 the explicit **regulation status states** ([ADR-0006](adr/0006-explicit-regulation-status-states.md)),
 the **applicability engine** ([ADR-0005](adr/0005-applicability-engine.md)), and
 a **bitemporal resolver** ([ADR-0003](adr/0003-bitemporal-data-model.md),
 [ADR-0022](adr/0022-in-code-bitemporal-representation.md)) that answers
-"what was in effect on D, as we knew it on K" — with California SB 253/261 seed
-data and a versioned SB 261 status history. Pure — no I/O, no AWS, no framework,
+"what was in effect on D, as we knew it on K", with California SB 253/261 seed
+data and a versioned SB 261 status history. Pure, no I/O, no AWS, no framework,
 and no runtime dependencies.
 
-**Quality bar** — tests run on **Vitest** with a hard **per-file coverage gate
+**Quality bar**: tests run on **Vitest** with a hard **per-file coverage gate
 (95% line / 90% branch)**, enforced locally and in CI
 ([ADR-0019](adr/0019-vitest-testing-and-coverage.md)).
 
-**Infrastructure** — AWS CDK in [`infra/`](infra/), all four stacks **deployed
+**Infrastructure**: AWS CDK in [`infra/`](infra/), all four stacks **deployed
 live to us-west-2**:
 
-- `CostStack` — the **$1 monthly budget** backstop (ADR-0016), with 80% / 100%
+- `CostStack`: the **$1 monthly budget** backstop (ADR-0016), with 80% / 100%
   email alerts.
-- `DataStack` — the **content-addressed S3 snapshot store** (ADR-0011:
+- `DataStack`: the **content-addressed S3 snapshot store** (ADR-0011:
   versioned, object-locked, private, retained) and the **Aurora DSQL** cluster
   (ADR-0012), ACTIVE and deletion-protected.
-- `PipelineStack` — the snapshotting pipeline (ADR-0010): an EventBridge daily
+- `PipelineStack`: the snapshotting pipeline (ADR-0010): an EventBridge daily
   cron → ingestor + **differ** Lambdas (the differ runs `semdiff`), an SQS DLQ,
   and 14-day log groups.
-- `ServingStack` — one **CloudFront** distribution fronting the static site and
+- `ServingStack`: one **CloudFront** distribution fronting the static site and
   the thin API (`/api/*`) via an **API Gateway HTTP API** → Lambda (ADR-0013,
   ADR-0023).
 - Cost-discipline **guardrail Aspects** fail `cdk synth` on a NAT Gateway, a
@@ -97,9 +97,9 @@ live to us-west-2**:
 The change-detection path is wired and verified end to end:
 [`semdiff@0.1.0`](https://www.npmjs.com/package/semdiff) is integrated into the
 differ, with its Anthropic API key stored in an SSM `SecureString` (ADR-0024)
-and the differ kept strictly async — never publicly invokable (ADR-0007).
+and the differ kept strictly async, never publicly invokable (ADR-0007).
 
-**Web** — the React + TypeScript app in [`web/`](web/)
+**Web**: the React + TypeScript app in [`web/`](web/)
 ([ADR-0013](adr/0013-static-generation-thin-api.md),
 [ADR-0021](adr/0021-react-typescript-webpack-web-app.md)): React components
 rendered from the `core` corpus, **prerendered to static HTML** with webpack so
@@ -138,7 +138,7 @@ npm run build:web                   # prerender the site + bundle into web/dist/
 
 ## v1 scope
 
-Three high-churn, well-documented regimes — and no more
+Three high-churn, well-documented regimes, and no more
 ([ADR-0009](adr/0009-v1-scope-three-regimes.md)):
 
 - **California SB 253 and SB 261**
@@ -156,8 +156,8 @@ live: it resolves to `stayed` as known in 2025 but `in-effect` as known in 2024.
 - **Primary-source pinned, not interpretive.** Return source text, citations,
   effective dates, and applicability. Do not advise.
   ([ADR-0002](adr/0002-primary-source-non-interpretive-scope.md))
-- **Bitemporal data model.** Two time axes — *valid time* (when a rule was
-  actually in effect) and *transaction time* (when we recorded it) — so the
+- **Bitemporal data model.** Two time axes, *valid time* (when a rule was
+  actually in effect) and *transaction time* (when we recorded it), so the
   system can answer both "what was in effect on date D" and "what did we
   believe was in effect as of our ingestion on D."
   ([ADR-0003](adr/0003-bitemporal-data-model.md))
@@ -166,14 +166,14 @@ live: it resolves to `stayed` as known in 2025 but `in-effect` as known in 2024.
   non-negotiable. ([ADR-0004](adr/0004-citation-integrity.md))
 - **Applicability engine.** Given a company profile (revenue, jurisdictions,
   listing status, fiscal year end), determine which obligations apply and by
-  when. This is conditional logic, not lookup — the highest-value, hardest
+  when. This is conditional logic, not lookup, the highest-value, hardest
   piece. ([ADR-0005](adr/0005-applicability-engine.md))
 - **Explicit status states.** A regulation can be *proposed*, *in-effect*,
   *enforced*, or *stayed*. SB 261, for instance, has been law while enforcement
   was paused pending appeal. A naive tool gets this catastrophically wrong.
   ([ADR-0006](adr/0006-explicit-regulation-status-states.md))
 - **Change detection and diffing.** Structured, meaning-aware diffs (via
-  `semdiff`) when a source changes — the recurring-value engine.
+  `semdiff`) when a source changes, the recurring-value engine.
   ([ADR-0007](adr/0007-change-detection-via-semdiff.md))
 - **Authoritative-source ingestion with provenance.** Pull from official APIs
   (Federal Register API, EUR-Lex, SEC EDGAR, the CARB docket), not brittle HTML
@@ -206,7 +206,7 @@ EventBridge Scheduler ──(cron)──▶ Lambda (ingestor)
 - **Lambda (ingestor)** fetches, hashes, compares, and only-on-change writes a
   new immutable snapshot. Fetch + parse + hash fits the 15-minute Lambda
   ceiling. ([ADR-0010](adr/0010-serverless-snapshotting-pipeline.md))
-- **S3** holds raw immutable snapshots keyed by content hash — identical
+- **S3** holds raw immutable snapshots keyed by content hash, identical
   content is never stored twice, every version is preserved.
   ([ADR-0011](adr/0011-content-addressed-snapshot-store.md))
 - **Aurora DSQL** holds the queryable bitemporal corpus, metadata index, and
@@ -217,7 +217,7 @@ EventBridge Scheduler ──(cron)──▶ Lambda (ingestor)
 
 ### Serving
 
-The website is the primary human surface — demoable, indexable, usable by
+The website is the primary human surface, demoable, indexable, usable by
 non-developers. Most pages are **statically generated** from the database so
 reads don't burn function invocations. A **thin API** is reserved for the three
 interactive features that surface the engineering depth
@@ -227,7 +227,7 @@ interactive features that surface the engineering depth
 - a **scope checker** that runs the applicability engine on a company profile,
 - a **diff view** of meaning-aware changes between source versions.
 
-The API is served by an **API Gateway HTTP API behind CloudFront** — the Lambda
+The API is served by an **API Gateway HTTP API behind CloudFront**: the Lambda
 is never publicly exposed and the endpoint is throttled
 ([ADR-0023](adr/0023-api-gateway-http-api.md), which superseded the original
 Lambda Function URL approach in
@@ -241,7 +241,7 @@ All infrastructure is **AWS CDK** in [`infra/`](infra/)
 
 ## Data store
 
-**Aurora DSQL** — PostgreSQL-compatible, AWS-native, serverless, scales to
+**Aurora DSQL**: PostgreSQL-compatible, AWS-native, serverless, scales to
 zero, with an ongoing Always-Free tier (100,000 DPUs + 1 GiB/month). The two
 core access patterns (point-in-time bitemporal lookup and conditional
 applicability) are relational by nature; applicability reads naturally as a SQL
@@ -249,7 +249,7 @@ applicability) are relational by nature; applicability reads naturally as a SQL
 
 **Caveats to verify before relying on them:**
 
-- DSQL is PostgreSQL-*compatible*, not full Postgres — extension support is
+- DSQL is PostgreSQL-*compatible*, not full Postgres, extension support is
   limited (verify **pgvector** if semantic citation search is wanted).
 - The `tstzrange` + GiST exclusion-constraint approach for non-overlapping valid
   periods may not be supported; if not, enforce in application code.
@@ -266,7 +266,7 @@ The project is meant to live **indefinitely**, so it is architected strictly
 inside AWS **Always Free** ([ADR-0016](adr/0016-aws-always-free-cost-discipline.md)).
 
 - **Set a budget alarm on day one at a $1 threshold.** Non-negotiable.
-- **Avoid a NAT Gateway** (~$33/mo just to exist) — keep Lambda out of any VPC
+- **Avoid a NAT Gateway** (~$33/mo just to exist), keep Lambda out of any VPC
   that needs one.
 - **Set CloudWatch Logs retention (7–14 days)** or logs bill silently.
 - **Stay in a single region.**
@@ -277,9 +277,9 @@ inside AWS **Always Free** ([ADR-0016](adr/0016-aws-always-free-cost-discipline.
 ## Reliability is the contribution
 
 An LLM in a loop is nondeterministic, costs per call, and is wrong some
-percentage of the time. The unglamorous engineering — schema validation,
+percentage of the time. The unglamorous engineering (schema validation,
 retries, idempotency, caching, confidence flags, an eval harness, graceful
-failure — is the actual contribution. The product
+failure) is the actual contribution. The product
 is scoped to where **~90–95% correctness with human review beats the status
 quo**; nothing here is built to silently need four-nines accuracy.
 ([ADR-0017](adr/0017-reliability-and-quality-layer.md))
@@ -299,24 +299,24 @@ The full rationale lives in [`adr/`](adr/). Start with the
 - A custom domain (Route53 + an ACM cert in us-east-1 + CloudFront aliases) is
   planned; registration is the only manual, billable step.
 
-## Build order — progress
+## Build order
 
-1. ✅ **`semdiff`** — the meaning-aware diff engine, published as
+1. ✅ **`semdiff`**: the meaning-aware diff engine, published as
    [`semdiff@0.1.0`](https://www.npmjs.com/package/semdiff) and integrated here.
-2. ✅ **`core` domain logic** — status states, applicability engine, and the
+2. ✅ **`core` domain logic**: status states, applicability engine, and the
    bitemporal resolver, with seed data and a per-file-gated test suite.
-3. ✅ **Infrastructure** — all four CDK stacks deployed (cost backstop, data
+3. ✅ **Infrastructure**: all four CDK stacks deployed (cost backstop, data
    store + DSQL, snapshotting pipeline, serving layer).
-4. ✅ **Web app** — prerendered static site with a client-side Scope Checker and
+4. ✅ **Web app**: prerendered static site with a client-side Scope Checker and
    as-of slider.
-5. ✅ **Pipeline connective tissue** — source adapters, the ingestor's S3 write,
+5. ✅ **Pipeline connective tissue**: source adapters, the ingestor's S3 write,
    and the differ's S3-read + DSQL persist of diffs, verified end to end.
-6. ✅ **Corpus-backed API** — the thin API serves the stored corpus and the web
+6. ✅ **Corpus-backed API**: the thin API serves the stored corpus and the web
    app reads the live `/api`, via a least-privilege read-only DSQL role (ADR-0025).
-7. ✅ **Obligation grounding** — append-only grounding facts (ADR-0028) link each
+7. ✅ **Obligation grounding**: append-only grounding facts (ADR-0028) link each
    obligation to its ingested snapshot; the API and web surface the grounded vs.
    ungrounded distinction.
-8. ⬜ **Next** — more source adapters (ADR-0008), span-level grounding
+8. ⬜ **Next**: more source adapters (ADR-0008), span-level grounding
    (ADR-0028 §4), and ISSB once an IFRS licence is in place (ADR-0027).
 
 ## License
