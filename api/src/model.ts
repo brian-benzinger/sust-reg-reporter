@@ -10,9 +10,15 @@
  * web's existing client-side resolver (which already consumes that exact shape)
  * can swap its seed import for a `/api/as-of` fetch unchanged.
  */
-import type { ObligationStatusHistory } from "@sust-reg/core";
+import type {
+  ObligationGroundingHistory,
+  ObligationStatusHistory,
+} from "@sust-reg/core";
 
-export type { ObligationStatusHistory } from "@sust-reg/core";
+export type {
+  ObligationGroundingHistory,
+  ObligationStatusHistory,
+} from "@sust-reg/core";
 
 /** One tracked source plus how many immutable versions we've recorded. */
 export interface SourceSummary {
@@ -57,4 +63,10 @@ export interface CorpusReader {
   getDiff(id: string): Promise<DiffDetail | undefined>;
   /** Every obligation's append-only bitemporal status history (ADR-0003). */
   statusTimelines(): Promise<ObligationStatusHistory[]>;
+  /**
+   * Every obligation's append-only grounding facts (ADR-0028) — the link from
+   * an obligation to the immutable snapshot that substantiates it. The route
+   * resolves the current grounding from these to derive the served provenance.
+   */
+  groundingHistories(): Promise<ObligationGroundingHistory[]>;
 }

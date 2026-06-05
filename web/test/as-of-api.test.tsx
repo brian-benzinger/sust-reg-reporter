@@ -77,6 +77,56 @@ describe("AsOfSlider (API integration)", () => {
     expect(screen.getByText("In effect")).toBeTruthy();
   });
 
+  it("renders the grounded badge and confidence from API provenance (ADR-0028)", async () => {
+    vi.mocked(fetchAsOf).mockResolvedValue({
+      validDates: ["2023-01-01"],
+      knowledgeDates: ["2023-01-01"],
+      rows: [
+        {
+          obligationId: "ob-a",
+          title: "Obligation A",
+          regime: "R1",
+          status: "in-effect",
+          grounded: true,
+          confidence: "high",
+          snapshotHash: "sha256:abc",
+          retrievedAt: "2026-05-31",
+        },
+      ],
+    });
+
+    render(<AsOfSlider histories={histories} />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Grounded")).toBeTruthy();
+    expect(screen.getByText("high")).toBeTruthy();
+  });
+
+  it("marks an API row ungrounded when grounded is false", async () => {
+    vi.mocked(fetchAsOf).mockResolvedValue({
+      validDates: ["2023-01-01"],
+      knowledgeDates: ["2023-01-01"],
+      rows: [
+        {
+          obligationId: "ob-a",
+          title: "Obligation A",
+          regime: "R1",
+          status: "in-effect",
+          grounded: false,
+        },
+      ],
+    });
+
+    render(<AsOfSlider histories={histories} />);
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText("Ungrounded seed data")).toBeTruthy();
+  });
+
   it("keeps local rows when the API response has no rows field", async () => {
     // /api/as-of without date params returns only validDates/knowledgeDates
     vi.mocked(fetchAsOf).mockResolvedValue({
