@@ -7,6 +7,7 @@ describe("routeFor (ADR-0013)", () => {
     expect(routeFor("/api/as-of")).toBe("as-of");
     expect(routeFor("/api/scope-check")).toBe("scope-check");
     expect(routeFor("/api/diff")).toBe("diff");
+    expect(routeFor("/api/grounding")).toBe("grounding");
     expect(routeFor("/api/health")).toBe("health");
   });
 

@@ -4,6 +4,7 @@ export type Route =
   | "as-of"
   | "scope-check"
   | "diff"
+  | "grounding"
   | "not-found";
 
 /**
@@ -20,6 +21,7 @@ export function routeFor(path: string): Route {
   if (p === "/as-of" || p.startsWith("/as-of/")) return "as-of";
   if (p === "/scope-check") return "scope-check";
   if (p === "/diff" || p.startsWith("/diff/")) return "diff";
+  if (p === "/grounding") return "grounding";
   return "not-found";
 }
 

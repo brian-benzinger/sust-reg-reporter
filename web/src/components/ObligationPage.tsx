@@ -1,5 +1,6 @@
 import type { ObligationView } from "../model.ts";
-import { GroundedBadge, StatusBadge } from "./Badges.tsx";
+import { GroundingDisplay, StatusBadge } from "./Badges.tsx";
+import { OBLIGATION_GROUNDING_ROOT_ID } from "./ObligationGroundingBadge.tsx";
 
 /** Per-obligation detail page. */
 export function ObligationPage(props: {
@@ -35,8 +36,11 @@ export function ObligationPage(props: {
         ))}
       </ul>
       <h2>Citation</h2>
-      <p>
-        <GroundedBadge grounded={view.citation.grounded} />
+      {/* Hydrated in place: prerenders the seed citation's grounding, then
+          overlays the live grounding for this obligation (ADR-0028). The id and
+          data attribute let the client entry mount the island with no props. */}
+      <p id={OBLIGATION_GROUNDING_ROOT_ID} data-obligation-id={view.id}>
+        <GroundingDisplay grounded={view.citation.grounded} />
       </p>
       <dl className="kv">
         <dt>Reference</dt>
