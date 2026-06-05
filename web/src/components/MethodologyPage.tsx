@@ -12,8 +12,8 @@ export function MethodologyPage(): React.ReactElement {
     <>
       <h1>Methodology</h1>
       <p className="lead">
-        What this site does, how each claim is grounded, and the limits you
-        should hold it to.
+        This page explains what the site does, how each claim is grounded in
+        primary sources, and where its limits lie.
       </p>
       <div className="notice">{NOT_LEGAL_ADVICE}</div>
 
