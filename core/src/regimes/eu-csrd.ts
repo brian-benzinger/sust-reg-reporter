@@ -35,7 +35,7 @@ export const CSRD_WAVE1: Obligation = {
   },
   firstReportingDeadline: "2025-01-01",
   source: {
-    label: "EU CSRD / ESRS (Directive 2022/2464) — seed, ungrounded",
+    label: "EU CSRD / ESRS (Directive 2022/2464)",
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
   sourceKey: "eu-csrd-2022-2464",
@@ -54,7 +54,7 @@ export const CSRD_WAVE2: Obligation = {
   },
   firstReportingDeadline: "2028-01-01",
   source: {
-    label: "EU CSRD wave 2 (post-Omnibus stop-the-clock) — seed, ungrounded",
+    label: "EU CSRD wave 2 (post-Omnibus stop-the-clock)",
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
   // Both waves are substantiated by the same CSRD directive snapshot (ADR-0028:

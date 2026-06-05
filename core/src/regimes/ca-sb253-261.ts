@@ -36,7 +36,7 @@ export const SB_253: Obligation = {
   },
   firstReportingDeadline: "2026-01-01",
   source: {
-    label: "California SB 253 (2023) — seed, ungrounded",
+    label: "California SB 253 (2023)",
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
 };
@@ -55,7 +55,7 @@ export const SB_261: Obligation = {
   },
   firstReportingDeadline: "2026-01-01",
   source: {
-    label: "California SB 261 (2023) — seed, ungrounded",
+    label: "California SB 261 (2023)",
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
   // SB 261's bill text is a registered source (ADR-0028); the pipeline grounds
