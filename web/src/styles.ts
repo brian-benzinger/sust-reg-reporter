@@ -148,6 +148,13 @@ body {
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Sticky footer: a full-height flex column so a short page's footer still
+     sits at the bottom of the viewport (main grows to fill the gap), while a
+     tall page scrolls and the footer follows the content. */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Ease the swap between modes and the interactive micro-motion; respect the
@@ -266,7 +273,9 @@ header.site nav a:hover {
 :root[data-theme-pref="dark"] .theme-toggle .ti-dark { display: inline-flex; }
 
 /* ---- Main + typography ---------------------------------------------- */
-main { padding: 2.5rem 0 4rem; }
+/* Grow to fill the viewport so the footer is pushed to the bottom on short
+   pages; never shrink below the content's height on tall ones. */
+main { padding: 2.5rem 0 4rem; flex: 1 0 auto; }
 
 h1 { font-size: var(--fs-h1); line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 0.75rem; }
 h2 { font-size: var(--fs-h2); line-height: 1.25; letter-spacing: -0.01em; margin: 2.25rem 0 0.6rem; }
@@ -525,6 +534,7 @@ dl.kv dd { margin: 0; }
 
 /* ---- Footer ---------------------------------------------------------- */
 footer.site {
+  flex-shrink: 0;
   border-top: 1px solid var(--border);
   background: var(--bg-elev);
   color: var(--muted);
@@ -535,6 +545,28 @@ footer.site p { margin: 0.4rem 0; }
 footer.site .footer-nav { display: flex; flex-wrap: wrap; gap: 1.25rem; margin-bottom: 0.75rem; }
 footer.site .footer-nav a { color: var(--fg); text-decoration: none; font-weight: 500; }
 footer.site .footer-nav a:hover { color: var(--accent-strong); }
+
+/* Copyright line and the author's source/social icon links. */
+.footer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  margin-top: 1.25rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border);
+}
+.footer-meta .copyright { margin: 0; }
+.footer-social { display: inline-flex; align-items: center; gap: 0.4rem; }
+.footer-social a {
+  display: inline-flex;
+  color: var(--muted);
+  padding: 0.35rem;
+  border-radius: var(--radius-sm);
+}
+.footer-social a:hover { color: var(--accent-strong); background: var(--surface); }
+.footer-social .social-icon { display: block; }
 
 /* ---- Panels for the interactive islands ----------------------------- */
 .panel {
