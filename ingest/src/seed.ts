@@ -16,7 +16,12 @@
  * Pure orchestration over injected I/O — unit-tested with fakes; the DSQL glue
  * lives in `io/obligations.ts`.
  */
-import type { Obligation, ObligationStatusHistory } from "@sust-reg/core";
+import type {
+  GroundingConfidence,
+  GroundingMethod,
+  Obligation,
+  ObligationStatusHistory,
+} from "@sust-reg/core";
 
 /** An obligation's static attributes, shaped for persistence. */
 export interface ObligationRow {
@@ -42,6 +47,28 @@ export interface StatusFactRow {
   readonly recordedAt: string;
 }
 
+/** One append-only grounding fact, shaped for persistence (ADR-0028). */
+export interface GroundingRow {
+  readonly obligationId: string;
+  readonly sourceKey: string;
+  readonly sourceVersionId: string;
+  readonly contentHash: string;
+  /** Character offsets within the snapshot; null ⇒ document-level grounding. */
+  readonly spanStart: number | null;
+  readonly spanEnd: number | null;
+  readonly retrievedAt: string;
+  readonly method: GroundingMethod;
+  readonly confidence: GroundingConfidence;
+  readonly recordedAt: string;
+}
+
+/** A pointer to the latest immutable snapshot recorded for a source. */
+export interface SourceVersionRef {
+  readonly id: string;
+  readonly contentHash: string;
+  readonly retrievedAt: string;
+}
+
 /** Injected I/O for a corpus seed run. */
 export interface SeedDeps {
   obligationExists(id: string): Promise<boolean>;
@@ -49,6 +76,19 @@ export interface SeedDeps {
   /** How many status facts are already recorded for this obligation. */
   statusFactsRecorded(obligationId: string): Promise<number>;
   appendStatusFact(row: StatusFactRow): Promise<void>;
+  /** The latest snapshot recorded for a source, if any (ADR-0028). */
+  latestSourceVersion(sourceKey: string): Promise<SourceVersionRef | undefined>;
+  /** Whether this obligation is already grounded to this exact snapshot. */
+  groundingExists(obligationId: string, contentHash: string): Promise<boolean>;
+  appendGrounding(row: GroundingRow): Promise<void>;
+}
+
+/** Outcome of grounding one obligation. */
+export interface GroundResult {
+  readonly obligationId: string;
+  readonly grounded: boolean;
+  /** Why grounding did or didn't happen — useful for diagnostics. */
+  readonly reason: "grounded" | "no-source" | "no-snapshot" | "already-grounded";
 }
 
 export interface SeedResult {
@@ -122,6 +162,63 @@ export async function seedCorpus(
   const out: SeedResult[] = [];
   for (const o of obligations) {
     out.push(await seedObligation(deps, o, byId.get(o.id)));
+  }
+  return out;
+}
+
+/**
+ * Ground one obligation to its source's latest snapshot, idempotently
+ * (ADR-0028 §5). Appends a document-level grounding only when the obligation
+ * declares a `sourceKey`, that source has an ingested snapshot, and that exact
+ * snapshot is not already grounded — so re-runs and unchanged sources never
+ * duplicate a grounding (the same "append only when absent" discipline as the
+ * seed; ADR-0017). An obligation with no registered source stays ungrounded.
+ */
+export async function groundObligation(
+  deps: SeedDeps,
+  obligation: Obligation,
+  recordedAt: string,
+): Promise<GroundResult> {
+  const sourceKey = obligation.sourceKey;
+  if (sourceKey === undefined) {
+    return { obligationId: obligation.id, grounded: false, reason: "no-source" };
+  }
+  const version = await deps.latestSourceVersion(sourceKey);
+  if (version === undefined) {
+    return { obligationId: obligation.id, grounded: false, reason: "no-snapshot" };
+  }
+  if (await deps.groundingExists(obligation.id, version.contentHash)) {
+    return { obligationId: obligation.id, grounded: false, reason: "already-grounded" };
+  }
+  await deps.appendGrounding({
+    obligationId: obligation.id,
+    sourceKey,
+    sourceVersionId: version.id,
+    contentHash: version.contentHash,
+    spanStart: null,
+    spanEnd: null,
+    retrievedAt: version.retrievedAt,
+    method: "document",
+    confidence: "high",
+    recordedAt,
+  });
+  return { obligationId: obligation.id, grounded: true, reason: "grounded" };
+}
+
+/**
+ * Ground a set of obligations to their sources' latest snapshots (ADR-0028).
+ * Idempotent: safe to run after every seed and every ingest pass — it appends a
+ * grounding only when a source has a snapshot not yet grounded to. `recordedAt`
+ * is the transaction time stamped on any new grounding (the caller's clock).
+ */
+export async function groundCorpus(
+  deps: SeedDeps,
+  obligations: readonly Obligation[],
+  recordedAt: string,
+): Promise<GroundResult[]> {
+  const out: GroundResult[] = [];
+  for (const o of obligations) {
+    out.push(await groundObligation(deps, o, recordedAt));
   }
   return out;
 }

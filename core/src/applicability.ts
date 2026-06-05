@@ -78,6 +78,13 @@ export interface Obligation {
    */
   readonly firstReportingDeadline?: string;
   readonly source: SourceCitation;
+  /**
+   * The registry source key (`ingest` `sources.ts`) whose ingested snapshots
+   * substantiate this obligation, if one is registered (ADR-0028). The pipeline
+   * grounds the obligation to that source's latest snapshot; an obligation with
+   * no `sourceKey` has no authoritative source yet and stays ungrounded.
+   */
+  readonly sourceKey?: string;
 }
 
 export interface ApplicabilityResult {
