@@ -35,8 +35,7 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
   const pages: PageSpec[] = [
     {
       path: "index.html",
-      title:
-        "DiscloseLab · climate disclosure regulations, version-tracked",
+      title: "DiscloseLab",
       description:
         "Version-tracked climate disclosure regulations with primary-source citations, effective dates, and per-company applicability.",
       canonicalPath: "/index.html",
