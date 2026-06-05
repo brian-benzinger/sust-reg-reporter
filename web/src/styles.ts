@@ -666,6 +666,23 @@ table.asof-table tbody tr:hover,
 table.sources-table tbody tr:hover,
 table.diffs-table tbody tr:hover { background: var(--surface); }
 
+/* Stable geometry so the table never resizes when a slider move swaps a pill
+   badge for plain text — a status "—", or grounded/ungrounded — on refresh.
+   Each body cell reserves a fixed row height and centers its content, so a
+   badge and a dash occupy the same space (no vertical jump). Reserved minimum
+   widths on the Status and Grounding columns keep the layout from reflowing
+   horizontally as badge widths change. */
+table.asof-table td {
+  height: 3rem;
+  padding-top: 0;
+  padding-bottom: 0;
+  vertical-align: middle;
+}
+table.asof-table th:nth-child(3),
+table.asof-table td:nth-child(3) { min-width: 7rem; }
+table.asof-table th:nth-child(4),
+table.asof-table td:nth-child(4) { min-width: 12rem; }
+
 /* ---- Async states ---------------------------------------------------- */
 .loading {
   display: inline-flex;

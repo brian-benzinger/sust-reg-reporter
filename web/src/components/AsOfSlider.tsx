@@ -64,21 +64,36 @@ export function AsOfSlider(props: {
 
   const rows = apiRows ?? localRows;
 
-  // Call /api/as-of whenever the selected date strings change (including on mount).
+  // Call /api/as-of whenever the selected date strings change (including on
+  // mount). The indicator is debounced — shown only if the fetch outlasts the
+  // delay — so the common fast response updates the rows in place with no
+  // flash, and a superseded response (the slider moved again) is ignored so the
+  // table never flickers back to stale data.
   useEffect(() => {
-    setLoading(true);
+    let active = true;
+    const showLoading = setTimeout(() => {
+      if (active) setLoading(true);
+    }, 250);
+
     fetchAsOf(validOn, knownAsOf)
       .then((data) => {
+        if (!active) return;
         if (data.rows !== undefined) {
           setApiRows(data.rows.map(apiRowToTimelineRow));
         }
       })
       .catch(() => {
-        setApiRows(null);
+        if (active) setApiRows(null);
       })
       .finally(() => {
-        setLoading(false);
+        clearTimeout(showLoading);
+        if (active) setLoading(false);
       });
+
+    return () => {
+      active = false;
+      clearTimeout(showLoading);
+    };
   }, [validOn, knownAsOf]);
 
   return (
