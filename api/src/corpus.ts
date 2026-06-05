@@ -101,6 +101,28 @@ export async function serveRoute(
         enforceableCount: results.filter((r) => r.enforceable).length,
       });
     }
+    case "grounding": {
+      // The current grounding for every grounded obligation (ADR-0028), keyed
+      // by obligation id and independent of the slider's date axes — so the
+      // static Regimes/obligation pages can hydrate their seed citation badges
+      // to live provenance, consistent with /as-of. Ungrounded obligations are
+      // simply absent (the client treats a missing entry as ungrounded).
+      const groundings = (await reader.groundingHistories()).flatMap((g) => {
+        const current = latestGrounding(g.facts);
+        return current === undefined
+          ? []
+          : [
+              {
+                obligationId: g.obligationId,
+                grounded: true as const,
+                confidence: current.confidence,
+                snapshotHash: current.snapshotHash,
+                retrievedAt: current.retrievedAt,
+              },
+            ];
+      });
+      return ok(route, { groundings });
+    }
     case "as-of": {
       // The persisted corpus (ADR-0003), reached through the reader — the seam
       // the route was always meant to switch onto. Empty until `corpusSeed`

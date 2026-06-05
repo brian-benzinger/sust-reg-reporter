@@ -26,8 +26,13 @@ describe("buildPages (ADR-0013)", () => {
     expect(byPath.get("as-of.html")?.withClient).toBe(true);
     expect(byPath.get("sources.html")?.withClient).toBe(true);
     expect(byPath.get("diffs.html")?.withClient).toBe(true);
+    // The Regimes index and per-obligation pages hydrate to overlay live
+    // grounding on their seed badges (ADR-0028).
+    expect(byPath.get("regimes/index.html")?.withClient).toBe(true);
+    for (const o of ALL_OBLIGATIONS) {
+      expect(byPath.get(`regimes/${o.id}.html`)?.withClient).toBe(true);
+    }
     expect(byPath.get("index.html")?.withClient).toBe(false);
-    expect(byPath.get("regimes/index.html")?.withClient).toBe(false);
     expect(byPath.get("status-states.html")?.withClient).toBe(false);
     expect(byPath.get("methodology.html")?.withClient).toBe(false);
   });
