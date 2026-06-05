@@ -58,6 +58,10 @@ export const SB_261: Obligation = {
     label: "California SB 261 (2023) — seed, ungrounded",
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
+  // SB 261's bill text is a registered source (ADR-0028); the pipeline grounds
+  // this obligation to its latest ingested snapshot. SB 253 has no registered
+  // source yet, so it carries no `sourceKey` and stays visibly ungrounded.
+  sourceKey: "ca-sb261-2023",
 };
 
 /** All seeded California obligations. */

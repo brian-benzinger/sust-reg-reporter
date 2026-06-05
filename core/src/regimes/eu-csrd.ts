@@ -38,6 +38,7 @@ export const CSRD_WAVE1: Obligation = {
     label: "EU CSRD / ESRS (Directive 2022/2464) — seed, ungrounded",
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
+  sourceKey: "eu-csrd-2022-2464",
 };
 
 export const CSRD_WAVE2: Obligation = {
@@ -56,6 +57,9 @@ export const CSRD_WAVE2: Obligation = {
     label: "EU CSRD wave 2 (post-Omnibus stop-the-clock) — seed, ungrounded",
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
+  // Both waves are substantiated by the same CSRD directive snapshot (ADR-0028:
+  // one source may ground several obligations).
+  sourceKey: "eu-csrd-2022-2464",
 };
 
 /** All seeded EU CSRD obligations. */

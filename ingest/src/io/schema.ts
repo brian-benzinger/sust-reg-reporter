@@ -75,6 +75,27 @@ export const SCHEMA_DDL: readonly string[] = [
     recorded_at    text not null,
     created_at     timestamptz not null default now()
   )`,
+  // Append-only grounding facts (ADR-0028): each pins an obligation to the
+  // immutable `source_version` (and content hash / S3 key) that substantiates
+  // it. `span_start`/`span_end` are nullable — null means document-level
+  // grounding; the columns ship now so adding character spans needs no
+  // migration. `retrieved_at` is the provenance anchor; `recorded_at` is the
+  // transaction time, so the current grounding is resolvable as-of a knowledge
+  // date. Re-grounding to a newer snapshot appends a row; nothing is mutated.
+  `create table if not exists obligation_groundings (
+    id                 uuid primary key default gen_random_uuid(),
+    obligation_id      text not null,
+    source_key         text not null,
+    source_version_id  uuid not null,
+    content_hash       text not null,
+    span_start         integer,
+    span_end           integer,
+    retrieved_at       text not null,
+    method             text not null,
+    confidence         text not null,
+    recorded_at        text not null,
+    created_at         timestamptz not null default now()
+  )`,
 ];
 
 /**
@@ -101,6 +122,7 @@ export const READER_TABLES: readonly string[] = [
   "diffs",
   "obligations",
   "obligation_status_history",
+  "obligation_groundings",
 ];
 
 const IDENT = /^[a-z_][a-z0-9_]*$/i;
