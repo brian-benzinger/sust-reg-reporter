@@ -9,4 +9,4 @@ export const NOT_LEGAL_ADVICE =
   "effective dates, and applicability metadata only. Verify against the cited " +
   "source and consult qualified counsel.";
 
-export const SITE_NAME = "sust-reg-reporter";
+export const SITE_NAME = "DiscloseLab";
