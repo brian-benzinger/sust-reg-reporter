@@ -1,5 +1,9 @@
 import type pg from "pg";
 import type {
+  GroundingConfidence,
+  GroundingFact,
+  GroundingMethod,
+  ObligationGroundingHistory,
   ObligationStatusHistory,
   RegulationStatus,
   TemporalFact,
@@ -18,7 +22,57 @@ import type {
  * coverage gate; the route logic that consumes it is tested against a fake.
  */
 export function dsqlCorpusReader(): CorpusReader {
-  return { listSources, listDiffs, getDiff, statusTimelines };
+  return { listSources, listDiffs, getDiff, statusTimelines, groundingHistories };
+}
+
+/**
+ * Reassemble each obligation's append-only grounding history (ADR-0028),
+ * ordered by record time so the route's `latestGrounding` resolves the current
+ * grounding deterministically. A null span pair (document-level grounding) maps
+ * to an absent `span`; the columns are still selected so a later span-level
+ * grounding surfaces with no query change.
+ */
+function groundingHistories(): Promise<ObligationGroundingHistory[]> {
+  return withDsql(async (c) => {
+    const r = await c.query<{
+      obligation_id: string;
+      source_key: string;
+      source_version_id: string;
+      content_hash: string;
+      span_start: number | null;
+      span_end: number | null;
+      retrieved_at: string;
+      method: string;
+      confidence: string;
+      recorded_at: string;
+    }>(
+      `select obligation_id, source_key, source_version_id, content_hash,
+              span_start, span_end, retrieved_at, method, confidence, recorded_at
+       from obligation_groundings
+       order by obligation_id, recorded_at`,
+    );
+    const byObligation = new Map<string, GroundingFact[]>();
+    for (const row of r.rows) {
+      const facts = byObligation.get(row.obligation_id) ?? [];
+      facts.push({
+        sourceKey: row.source_key,
+        sourceVersionId: row.source_version_id,
+        snapshotHash: row.content_hash,
+        retrievedAt: row.retrieved_at,
+        ...(row.span_start !== null && row.span_end !== null
+          ? { span: { start: row.span_start, end: row.span_end } }
+          : {}),
+        method: row.method as GroundingMethod,
+        confidence: row.confidence as GroundingConfidence,
+        recordedAt: row.recorded_at,
+      });
+      byObligation.set(row.obligation_id, facts);
+    }
+    return [...byObligation.entries()].map(([obligationId, facts]) => ({
+      obligationId,
+      facts,
+    }));
+  });
 }
 
 /**

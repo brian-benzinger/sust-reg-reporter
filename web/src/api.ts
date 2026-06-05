@@ -8,7 +8,11 @@
  * Base path is `/api`, relative to the page origin, so CloudFront routes both
  * the static site and the API Gateway origin without any hardcoded URL.
  */
-import type { ApplicabilityResult, RegulationStatus } from "@sust-reg/core";
+import type {
+  ApplicabilityResult,
+  GroundingConfidence,
+  RegulationStatus,
+} from "@sust-reg/core";
 
 const API_BASE = "/api";
 
@@ -59,6 +63,14 @@ export interface AsOfApiRow {
   readonly title: string;
   readonly regime: string;
   readonly status?: RegulationStatus;
+  /** Whether this obligation is pinned to a real ingested snapshot (ADR-0028). */
+  readonly grounded?: boolean;
+  /** Confidence of the current grounding; present only when grounded. */
+  readonly confidence?: GroundingConfidence;
+  /** Content hash of the snapshot the grounding pins to; present when grounded. */
+  readonly snapshotHash?: string;
+  /** ISO date the pinned snapshot was retrieved; present when grounded. */
+  readonly retrievedAt?: string;
 }
 
 export interface AsOfApiResult {

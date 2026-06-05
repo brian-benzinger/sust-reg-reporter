@@ -5,6 +5,7 @@ import {
   type CompanyProfile,
   type ListingStatus,
   ALL_OBLIGATIONS,
+  latestGrounding,
   resolveValueAsOf,
 } from "@sust-reg/core";
 
@@ -127,13 +128,34 @@ export async function serveRoute(
         return ok(route, { validDates, knowledgeDates });
       }
 
+      // Grounding provenance (ADR-0028, invariant #2): each row carries whether
+      // it is pinned to a real ingested snapshot, with its confidence and
+      // snapshot anchor. v1 serves the *current* (latest-recorded) grounding —
+      // not resolved against `knownAsOf` — because groundings are backfilled at
+      // a single transaction time later than every status-knowledge date, so
+      // filtering by the slider would hide them at every stop; bitemporal
+      // grounding resolution is deferred (the `latestGrounding` knowledge axis
+      // is the seam for it).
+      const groundingFacts = new Map(
+        (await reader.groundingHistories()).map((g) => [g.obligationId, g.facts]),
+      );
+
       const rows = histories.map((entry) => {
         const status = resolveValueAsOf(entry.history, { validOn, knownAsOf });
+        const grounding = latestGrounding(groundingFacts.get(entry.obligationId) ?? []);
         return {
           obligationId: entry.obligationId,
           title: entry.title,
           regime: entry.regime,
           ...(status !== undefined ? { status } : {}),
+          grounded: grounding !== undefined,
+          ...(grounding !== undefined
+            ? {
+                confidence: grounding.confidence,
+                snapshotHash: grounding.snapshotHash,
+                retrievedAt: grounding.retrievedAt,
+              }
+            : {}),
         };
       });
 
