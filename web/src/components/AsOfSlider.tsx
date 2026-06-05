@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { type ObligationStatusHistory, ALL_STATUS_HISTORIES } from "@sust-reg/core";
 import { collectDates, resolveRows, type TimelineRow } from "../timeline.ts";
 import { statusLabel } from "../model.ts";
-import { StatusBadge } from "./Badges.tsx";
+import { GroundedBadge, StatusBadge } from "./Badges.tsx";
 import { fetchAsOf, type AsOfApiRow } from "../api.ts";
 
 /** The id of the element the client hydrates into (shared with prerender). */
@@ -21,7 +21,18 @@ function apiRowToTimelineRow(row: AsOfApiRow): TimelineRow {
     regime: row.regime,
     ...(row.status !== undefined ? { status: row.status } : {}),
     label: row.status !== undefined ? statusLabel(row.status) : "—",
+    ...(row.grounded !== undefined ? { grounded: row.grounded } : {}),
+    ...(row.confidence !== undefined ? { confidence: row.confidence } : {}),
+    ...(row.snapshotHash !== undefined ? { snapshotHash: row.snapshotHash } : {}),
+    ...(row.retrievedAt !== undefined ? { retrievedAt: row.retrievedAt } : {}),
   };
+}
+
+/** A hover tooltip pinning the grounding to its snapshot and retrieval date. */
+function provenanceTitle(row: TimelineRow): string | undefined {
+  if (row.grounded !== true || row.snapshotHash === undefined) return undefined;
+  const retrieved = row.retrievedAt !== undefined ? `, retrieved ${row.retrievedAt}` : "";
+  return `Grounded in snapshot ${row.snapshotHash}${retrieved}`;
 }
 
 /**
@@ -111,6 +122,7 @@ export function AsOfSlider(props: {
               <th>Obligation</th>
               <th>Regime</th>
               <th>Status</th>
+              <th>Grounding</th>
             </tr>
           </thead>
           <tbody>
@@ -123,6 +135,21 @@ export function AsOfSlider(props: {
                     <StatusBadge status={row.status} label={row.label} />
                   ) : (
                     <span className="muted">{row.label}</span>
+                  )}
+                </td>
+                <td>
+                  {/* Empty until the API answers — the seed paint can't know the
+                      live grounding state, so we stay neutral rather than flash
+                      a misleading "ungrounded" (ADR-0028, invariant #2). */}
+                  {row.grounded === undefined ? null : (
+                    <span className="grounding-cell" title={provenanceTitle(row)}>
+                      <GroundedBadge grounded={row.grounded} />
+                      {row.grounded && row.confidence !== undefined ? (
+                        <span className={`confidence confidence-${row.confidence}`}>
+                          {row.confidence}
+                        </span>
+                      ) : null}
+                    </span>
                   )}
                 </td>
               </tr>

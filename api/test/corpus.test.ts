@@ -4,6 +4,7 @@ import type {
   CorpusReader,
   DiffDetail,
   DiffSummary,
+  ObligationGroundingHistory,
   ObligationStatusHistory,
   SourceSummary,
 } from "../src/model.ts";
@@ -62,12 +63,43 @@ const TIMELINES: ObligationStatusHistory[] = [
   },
 ];
 
+// SB 261 is grounded to a real snapshot; SB 253 has no grounding fact (it has
+// no registered source) and stays ungrounded — the visible distinction the
+// reliability layer depends on (ADR-0028, invariant #2). The later fact
+// (re-grounded to a newer snapshot) is the one the route should resolve.
+const GROUNDINGS: ObligationGroundingHistory[] = [
+  {
+    obligationId: "ca-sb261-climate-risk-report",
+    facts: [
+      {
+        sourceKey: "ca-sb261-2023",
+        sourceVersionId: "ver-1",
+        snapshotHash: "sha256:old",
+        retrievedAt: "2026-05-01",
+        method: "document",
+        confidence: "high",
+        recordedAt: "2026-05-02",
+      },
+      {
+        sourceKey: "ca-sb261-2023",
+        sourceVersionId: "ver-2",
+        snapshotHash: "sha256:current",
+        retrievedAt: "2026-05-31",
+        method: "document",
+        confidence: "high",
+        recordedAt: "2026-06-03",
+      },
+    ],
+  },
+];
+
 function reader(over: Partial<CorpusReader> = {}): CorpusReader {
   return {
     listSources: async () => [SOURCE],
     listDiffs: async () => [SUMMARY],
     getDiff: async () => DETAIL,
     statusTimelines: async () => TIMELINES,
+    groundingHistories: async () => GROUNDINGS,
     ...over,
   };
 }
@@ -295,5 +327,44 @@ describe("/as-of (ADR-0003)", () => {
     expect(r.status).toBe(200);
     expect(r.body.validDates).toEqual([]);
     expect(r.body.knowledgeDates).toEqual([]);
+  });
+
+  it("carries the current grounding provenance on each row (ADR-0028)", async () => {
+    const r = await serveRoute(
+      reader(),
+      req("/api/as-of", { validOn: "2024-01-01", knownAsOf: "2025-06-01" }),
+    );
+    const rows = r.body.rows as Array<{
+      obligationId: string;
+      grounded: boolean;
+      confidence?: string;
+      snapshotHash?: string;
+      retrievedAt?: string;
+    }>;
+
+    const sb261 = rows.find((x) => x.obligationId === "ca-sb261-climate-risk-report");
+    // Grounded to the *latest* recorded snapshot, not the superseded one.
+    expect(sb261).toMatchObject({
+      grounded: true,
+      confidence: "high",
+      snapshotHash: "sha256:current",
+      retrievedAt: "2026-05-31",
+    });
+
+    // SB 253 has no grounding fact → ungrounded, with no snapshot provenance.
+    const sb253 = rows.find((x) => x.obligationId === "ca-sb253-ghg-disclosure");
+    expect(sb253?.grounded).toBe(false);
+    expect(sb253?.snapshotHash).toBeUndefined();
+    expect(sb253?.confidence).toBeUndefined();
+  });
+
+  it("marks every row ungrounded when no groundings are recorded", async () => {
+    const r = await serveRoute(
+      reader({ groundingHistories: async () => [] }),
+      req("/api/as-of", { validOn: "2024-01-01", knownAsOf: "2025-06-01" }),
+    );
+    const rows = r.body.rows as Array<{ grounded: boolean }>;
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows.every((x) => x.grounded === false)).toBe(true);
   });
 });

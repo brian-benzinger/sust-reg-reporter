@@ -8,6 +8,7 @@
  */
 import {
   type AsOf,
+  type GroundingConfidence,
   type ObligationStatusHistory,
   type RegulationStatus,
   resolveValueAsOf,
@@ -49,6 +50,16 @@ export interface TimelineRow {
   readonly status?: RegulationStatus;
   /** Display label, or an em dash when nothing was known/valid at that point. */
   readonly label: string;
+  /**
+   * Whether the obligation is grounded in a real snapshot (ADR-0028). Undefined
+   * until the API answers — the seed/initial-paint rows carry no grounding, so
+   * the column stays neutral rather than flashing a misleading "ungrounded".
+   */
+  readonly grounded?: boolean;
+  readonly confidence?: GroundingConfidence;
+  /** Snapshot provenance for the grounding tooltip; present when grounded. */
+  readonly snapshotHash?: string;
+  readonly retrievedAt?: string;
 }
 
 /** Resolve every obligation's status for a bitemporal query. */

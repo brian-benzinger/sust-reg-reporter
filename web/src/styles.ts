@@ -493,6 +493,18 @@ p.lead { font-size: var(--fs-lead); color: var(--muted); margin-top: 0; max-widt
 .badge.grounded { border-color: color-mix(in srgb, var(--ok) 40%, transparent); color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, var(--bg-elev)); }
 .badge.ungrounded { border-color: color-mix(in srgb, var(--warn-border) 55%, transparent); color: var(--paused); background: var(--warn-bg); }
 
+/* Grounding cell: the pill plus a small confidence chip (ADR-0028, ADR-0017). */
+.grounding-cell { display: inline-flex; align-items: center; gap: 0.4rem; }
+.confidence {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.confidence-high { color: var(--ok); }
+.confidence-medium { color: var(--info); }
+.confidence-low { color: var(--paused); }
+
 /* ---- Lists / definition lists --------------------------------------- */
 ul.facts { margin: 0.5rem 0; padding-left: 1.25rem; }
 ul.facts li { margin: 0.25rem 0; }
