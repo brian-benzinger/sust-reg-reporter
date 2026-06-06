@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import { CostStack } from "../lib/cost-stack.ts";
 import { DataStack } from "../lib/data-stack.ts";
+import { DnsStack } from "../lib/dns-stack.ts";
 import { PipelineStack } from "../lib/pipeline-stack.ts";
 import { ServingStack } from "../lib/serving-stack.ts";
 import {
@@ -8,7 +9,12 @@ import {
   NoCostlyNetworkingAspect,
   SingleRegionAspect,
 } from "../lib/aspects.ts";
-import { appEnv, DEFAULT_BUDGET_EMAIL, DEFAULT_REGION } from "../lib/config.ts";
+import {
+  appEnv,
+  CUSTOM_DOMAIN,
+  DEFAULT_BUDGET_EMAIL,
+  DEFAULT_REGION,
+} from "../lib/config.ts";
 
 const app = new cdk.App();
 const env = appEnv();
@@ -48,6 +54,16 @@ new ServingStack(app, "SustReg-Serving", {
   env,
   description:
     "sust-reg-reporter serving layer: CloudFront + private web bucket + thin API Lambda Function URL (ADR-0013, ADR-0014).",
+});
+
+// Authoritative DNS for the custom domain (ADR-0031). Registered at Vercel,
+// nameservers delegated to this RETAINed hosted zone. Foundational and rarely
+// touched; the ACM cert + CloudFront apex alias (follow-up) reference it by id.
+new DnsStack(app, "SustReg-Dns", {
+  env,
+  domainName: CUSTOM_DOMAIN,
+  description:
+    "sust-reg-reporter authoritative DNS: Route 53 public hosted zone for the custom domain, registered at Vercel and delegated here (ADR-0031).",
 });
 
 // Cost-discipline guardrails, enforced at synth time (ADR-0016, ADR-0014).
