@@ -91,7 +91,15 @@ export class PipelineStack extends cdk.Stack {
       // memory; 512 MB OOMs on real legal documents (only the tiny demo fit).
       // More memory also raises the CPU share, so the diff finishes faster.
       memorySize: 1536,
-      timeout: cdk.Duration.minutes(5),
+      // Fail fast (ADR-0016): a normal diff finishes in ~15s and the engine caps
+      // how many changes it will pay to classify, so a run pinned to a long wall
+      // is a runaway burning LLM calls — don't let it run for minutes.
+      timeout: cdk.Duration.seconds(90),
+      // Async-invoked by the ingestor. Do NOT retry: the LLM classification is
+      // not idempotent in cost — a timed-out/failed diff that retried twice
+      // re-billed the whole classification each time (ADR-0016). A genuinely
+      // needed diff can be re-requested via the `rediff` maintenance op.
+      retryAttempts: 0,
       logGroup: new logs.LogGroup(this, "DifferLogGroup", {
         retention: logs.RetentionDays.TWO_WEEKS,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
