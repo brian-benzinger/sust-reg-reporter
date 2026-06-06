@@ -717,6 +717,11 @@ form.scope select:focus {
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
   gap: 1.25rem 1.75rem;
   margin: 0.5rem 0 1.5rem;
+  /* Don't let dragging a slider select the label/value text — a stray text
+     selection turns the next drag into a native text-drag (the "no-drop"
+     cursor), which blocks dragging the other slider. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 .asof-controls label { display: block; font-weight: 600; }
 .asof-controls label strong { color: var(--accent-strong); font-variant-numeric: tabular-nums; }
