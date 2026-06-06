@@ -91,10 +91,13 @@ export class PipelineStack extends cdk.Stack {
       // memory; 512 MB OOMs on real legal documents (only the tiny demo fit).
       // More memory also raises the CPU share, so the diff finishes faster.
       memorySize: 1536,
-      // Fail fast (ADR-0016): a normal diff finishes in ~15s and the engine caps
-      // how many changes it will pay to classify, so a run pinned to a long wall
-      // is a runaway burning LLM calls — don't let it run for minutes.
-      timeout: cdk.Duration.seconds(90),
+      // semdiff classifies changed pairs SEQUENTIALLY (~1.5s each), so a real
+      // legal-document diff is slow: the CSRD Omnibus diff (~58 changes) takes
+      // ~90s. Size the wall to fit a cap-sized diff (MAX_CLASSIFIED_CHANGES, see
+      // diff.ts) — well under the old 5 min, but enough that a legitimate diff
+      // never false-times-out. Runaway cost is bounded by the change-set cap and
+      // by retryAttempts:0, not by a short wall (ADR-0016).
+      timeout: cdk.Duration.seconds(240),
       // Async-invoked by the ingestor. Do NOT retry: the LLM classification is
       // not idempotent in cost — a timed-out/failed diff that retried twice
       // re-billed the whole classification each time (ADR-0016). A genuinely
