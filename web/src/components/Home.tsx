@@ -124,7 +124,7 @@ export function Home(props: {
         </div>
         <div className="stat">
           <span className="num">2</span>
-          <span className="label">time axes: valid and transaction</span>
+          <span className="label">dates per fact: effective and recorded</span>
         </div>
       </div>
 

@@ -727,6 +727,10 @@ form.scope select:focus {
 }
 
 /* ---- Data tables ----------------------------------------------------- */
+/* Wrapper so a wide table scrolls horizontally within the page on narrow
+   screens instead of overflowing the body and forcing the whole page sideways. */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
 table.asof-table, table.sources-table, table.diffs-table {
   border-collapse: separate;
   border-spacing: 0;
