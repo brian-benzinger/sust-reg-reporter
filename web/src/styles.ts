@@ -744,6 +744,49 @@ form.scope select:focus {
    screens instead of overflowing the body and forcing the whole page sideways. */
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
+/* Change-history detail: the expandable per-diff change list (ADR-0007). */
+.link-button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--link);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.link-button:hover { text-decoration: none; }
+.diff-detail-row > td { background: var(--surface); padding: 0.6rem 1rem 1rem; }
+.change-list { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.85rem; }
+.change-head { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: 0 0 0.3rem; }
+.change-type { color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.03em; }
+.change-desc { margin: 0.2rem 0; }
+.change-text {
+  margin: 0.2rem 0;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+}
+.change-text.del { background: var(--warn-bg); border-left: 3px solid var(--paused); }
+.change-text.ins {
+  background: color-mix(in srgb, var(--ok) 12%, var(--bg-elev));
+  border-left: 3px solid var(--ok);
+}
+.change-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-right: 0.4rem;
+}
+.badge.substantive {
+  border-color: color-mix(in srgb, var(--info) 40%, transparent);
+  color: var(--info);
+  background: color-mix(in srgb, var(--info) 12%, var(--bg-elev));
+}
+.badge.cosmetic { border-color: var(--border-strong); color: var(--muted); background: var(--surface); }
+
 table.asof-table, table.sources-table, table.diffs-table {
   border-collapse: separate;
   border-spacing: 0;

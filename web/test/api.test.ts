@@ -5,6 +5,7 @@ import {
   fetchAsOf,
   fetchSources,
   fetchDiffs,
+  fetchDiff,
   fetchGrounding,
 } from "../src/api.ts";
 
@@ -153,5 +154,19 @@ describe("fetchDiffs", () => {
   it("throws on a non-ok response", async () => {
     mockFetch({}, 404);
     await expect(fetchDiffs()).rejects.toThrow("HTTP 404");
+  });
+});
+
+describe("fetchDiff", () => {
+  it("calls /api/diff/{id} and unwraps the diff", async () => {
+    mockFetch({ diff: { id: "abc-123", changes: [] } });
+    const result = await fetchDiff("abc-123");
+    expect(result.id).toBe("abc-123");
+    expect(fetchedUrl()).toBe("/api/diff/abc-123");
+  });
+
+  it("throws on a non-ok response", async () => {
+    mockFetch({}, 404);
+    await expect(fetchDiff("x")).rejects.toThrow("HTTP 404");
   });
 });
