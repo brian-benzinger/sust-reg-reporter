@@ -16,6 +16,33 @@ export async function latestVersion(
   return row ? { id: row.id, contentHash: row.content_hash } : undefined;
 }
 
+/**
+ * Insert the source row if absent, else refresh its display metadata from the
+ * registry. The registry (`sources.ts`) is the source of truth for name/url/
+ * authority, so an edit there (a rename, a switch to a viewable link) lands on
+ * the next ingest — even when the document content is unchanged. Idempotent and
+ * never touches the immutable versions.
+ */
+export async function upsertSourceMeta(
+  client: pg.Client,
+  source: SourceConfig,
+): Promise<void> {
+  const exists = await client.query("select 1 from sources where source_key = $1", [
+    source.key,
+  ]);
+  if (exists.rowCount === 0) {
+    await client.query(
+      "insert into sources (source_key, name, url, authority) values ($1,$2,$3,$4)",
+      [source.key, source.name, source.url, source.authority],
+    );
+  } else {
+    await client.query(
+      "update sources set name = $2, url = $3, authority = $4 where source_key = $1",
+      [source.key, source.name, source.url, source.authority],
+    );
+  }
+}
+
 /** Ensure the source row exists (refreshing its display metadata from the
  *  registry), then append an immutable version; return its id. */
 export async function recordVersion(
@@ -27,23 +54,7 @@ export async function recordVersion(
     retrievedAt: string;
   },
 ): Promise<string> {
-  const exists = await client.query("select 1 from sources where source_key = $1", [
-    input.source.key,
-  ]);
-  if (exists.rowCount === 0) {
-    await client.query(
-      "insert into sources (source_key, name, url, authority) values ($1,$2,$3,$4)",
-      [input.source.key, input.source.name, input.source.url, input.source.authority],
-    );
-  } else {
-    // The registry is the source of truth for display metadata: refresh
-    // name/url/authority when it changes (e.g. a renamed source or a switch to a
-    // viewable link). Versions are immutable and untouched.
-    await client.query(
-      "update sources set name = $2, url = $3, authority = $4 where source_key = $1",
-      [input.source.key, input.source.name, input.source.url, input.source.authority],
-    );
-  }
+  await upsertSourceMeta(client, input.source);
   // s3_key is the content hash — the snapshot store is content-addressed (ADR-0011).
   const r = await client.query<{ id: string }>(
     `insert into source_versions (source_key, content_hash, s3_key, byte_size, retrieved_at)
@@ -88,6 +99,35 @@ export async function deleteSourceData(
     diffs: d.rowCount ?? 0,
     versions: v.rowCount ?? 0,
     sources: s.rowCount ?? 0,
+  };
+}
+
+/** Maintenance: retract a single version of a source by its content hash, along
+ *  with any groundings pinned to it and any diff that references it. Restores the
+ *  prior good snapshot as the latest — used to undo a snapshot that should never
+ *  have been recorded (e.g. a bot-challenge page that normalized to empty). DSQL
+ *  has no enforced foreign keys, so each table is cleared explicitly. */
+export async function deleteVersion(
+  client: pg.Client,
+  sourceKey: string,
+  contentHash: string,
+): Promise<{ versions: number; groundings: number; diffs: number }> {
+  const g = await client.query(
+    "delete from obligation_groundings where source_key = $1 and content_hash = $2",
+    [sourceKey, contentHash],
+  );
+  const d = await client.query(
+    "delete from diffs where source_key = $1 and (from_hash = $2 or to_hash = $2)",
+    [sourceKey, contentHash],
+  );
+  const v = await client.query(
+    "delete from source_versions where source_key = $1 and content_hash = $2",
+    [sourceKey, contentHash],
+  );
+  return {
+    versions: v.rowCount ?? 0,
+    groundings: g.rowCount ?? 0,
+    diffs: d.rowCount ?? 0,
   };
 }
 
