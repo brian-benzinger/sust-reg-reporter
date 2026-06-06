@@ -41,4 +41,22 @@ describe("diffSnapshots (ADR-0007)", () => {
     expect(result.provenance.engineVersion).toBe("0.1.1");
     expect(result.schemaVersion).toBe("1.0.0");
   });
+
+  it("flags every change for review without paid classification when over the cap", async () => {
+    let paidCalls = 0;
+    const counting: Classifier = {
+      classify: async () => {
+        paidCalls += 1;
+        return { classification: "substantive", confidence: 1 };
+      },
+    };
+    const before = "Companies with revenue over $1B must report annually.";
+    const after = "Firms earning above $500M shall file a disclosure each year.";
+    // maxChanges = 0 forces the cap, standing in for a whole-document replacement.
+    const result = await diffSnapshots(before, after, counting, 0);
+    expect(result.changes.length).toBeGreaterThan(0);
+    // The injected (paid) classifier was never called; all changes are flagged.
+    expect(paidCalls).toBe(0);
+    expect(result.summary.needsReview).toBe(result.changes.length);
+  });
 });

@@ -1,6 +1,33 @@
-import { diff, type Classifier, type StructuredDiff } from "semdiff";
+import {
+  diff,
+  needsReviewVerdict,
+  type Classifier,
+  type ClassifierVerdict,
+  type StructuredDiff,
+} from "semdiff";
 
 export type { StructuredDiff, Change, Span } from "semdiff";
+
+/**
+ * The most changed units we will pay an LLM to classify in a single diff
+ * (ADR-0016). semdiff classifies one provider call per changed pair, so a
+ * whole-document replacement — e.g. a snapshot captured from a failed fetch, or
+ * the first version of a newly tracked source diffed against an empty
+ * predecessor — would make hundreds-to-thousands of calls. A genuine amendment
+ * is tens of changes; beyond this cap a diff is almost certainly structural, so
+ * we flag every change for human review instead of classifying it.
+ */
+export const MAX_CLASSIFIED_CHANGES = 200;
+
+/**
+ * A no-cost classifier that abstains on every pair using semdiff's canonical
+ * needs-review verdict — it makes no provider calls. Used to compute the
+ * structural diff (segmentation + alignment) so we can SIZE the change set
+ * before deciding whether classifying it is affordable.
+ */
+const FLAG_FOR_REVIEW: Classifier = {
+  classify: (): Promise<ClassifierVerdict> => Promise.resolve(needsReviewVerdict()),
+};
 
 /**
  * Run semdiff (ADR-0007) over the before/after text of a changed snapshot,
@@ -20,6 +47,18 @@ export async function diffSnapshots(
   before: string,
   after: string,
   classifier?: Classifier,
+  maxChanges: number = MAX_CLASSIFIED_CHANGES,
 ): Promise<StructuredDiff> {
-  return diff(before, after, classifier ? { classifier } : undefined);
+  if (classifier === undefined) {
+    return diff(before, after);
+  }
+  // Size the change set first with a no-cost structural pass (ADR-0016). Above
+  // the cap the diff is almost certainly a whole-document replacement, not an
+  // amendment; we keep that flagged structural result rather than making one
+  // (paid) provider call per change.
+  const structural = await diff(before, after, { classifier: FLAG_FOR_REVIEW });
+  if (structural.changes.length > maxChanges) {
+    return structural;
+  }
+  return diff(before, after, { classifier });
 }
