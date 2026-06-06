@@ -43,7 +43,7 @@ describe("runDiffJob (ADR-0007)", () => {
     expect(recorded).toBeDefined();
     expect(recorded?.sourceKey).toBe("demo");
     expect(recorded?.toVersionId).toBe("v2");
-    expect(recorded?.engineVersion).toBe("0.1.1");
+    expect(recorded?.engineVersion).toBe("0.1.2");
     const changes = JSON.parse(recorded!.changes);
     expect(changes.length).toBeGreaterThan(0);
     // The persisted change carries the literal before/after prose, not just spans.
