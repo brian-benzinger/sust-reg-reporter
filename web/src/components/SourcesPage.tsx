@@ -26,26 +26,28 @@ export function SourcesIsland(): React.ReactElement {
   }
 
   return (
-    <table className="sources-table">
-      <thead>
-        <tr>
-          <th>Source</th>
-          <th>Authority</th>
-          <th>Versions</th>
-          <th>Latest recorded</th>
-        </tr>
-      </thead>
-      <tbody>
-        {sources.map((s) => (
-          <tr key={s.key}>
-            <td>{s.name}</td>
-            <td>{s.authority}</td>
-            <td>{s.versions}</td>
-            <td>{s.latestRecordedAt ?? "n/a"}</td>
+    <div className="table-scroll">
+      <table className="sources-table">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Authority</th>
+            <th>Versions</th>
+            <th>Latest recorded</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {sources.map((s) => (
+            <tr key={s.key}>
+              <td>{s.name}</td>
+              <td>{s.authority}</td>
+              <td>{s.versions}</td>
+              <td>{s.latestRecordedAt ?? "n/a"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

@@ -39,28 +39,30 @@ export function DiffsIsland(): React.ReactElement {
   }
 
   return (
-    <table className="diffs-table">
-      <thead>
-        <tr>
-          <th>Source</th>
-          <th>Substantive</th>
-          <th>Cosmetic</th>
-          <th>Needs review</th>
-          <th>Recorded</th>
-        </tr>
-      </thead>
-      <tbody>
-        {diffs.map((d) => (
-          <tr key={d.id}>
-            <td>{d.sourceKey}</td>
-            <td>{d.substantive}</td>
-            <td>{d.cosmetic}</td>
-            <td>{d.needsReview}</td>
-            <td>{formatDate(d.createdAt)}</td>
+    <div className="table-scroll">
+      <table className="diffs-table">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Substantive</th>
+            <th>Cosmetic</th>
+            <th>Needs review</th>
+            <th>Recorded</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {diffs.map((d) => (
+            <tr key={d.id}>
+              <td>{d.sourceKey}</td>
+              <td>{d.substantive}</td>
+              <td>{d.cosmetic}</td>
+              <td>{d.needsReview}</td>
+              <td>{formatDate(d.createdAt)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

@@ -131,7 +131,8 @@ export function AsOfSlider(props: {
           </span>
         ) : null}
 
-        <table className="asof-table">
+        <div className="table-scroll">
+          <table className="asof-table">
           <thead>
             <tr>
               <th>Obligation</th>
@@ -170,7 +171,8 @@ export function AsOfSlider(props: {
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        </div>
       </div>
     </>
   );
