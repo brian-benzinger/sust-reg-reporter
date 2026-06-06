@@ -59,7 +59,7 @@ export function SourcesIsland(): React.ReactElement {
             <th>Source</th>
             <th>Authority</th>
             <th>Versions</th>
-            <th>Latest recorded</th>
+            <th>Latest snapshot</th>
           </tr>
         </thead>
         <tbody>
