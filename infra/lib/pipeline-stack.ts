@@ -87,7 +87,10 @@ export class PipelineStack extends cdk.Stack {
     const differFn = new NodejsFunction(this, "DifferFn", {
       ...common,
       entry: join(HANDLERS, "differ.ts"),
-      memorySize: 512,
+      // semdiff loads both full snapshots and builds the structured diff in
+      // memory; 512 MB OOMs on real legal documents (only the tiny demo fit).
+      // More memory also raises the CPU share, so the diff finishes faster.
+      memorySize: 1536,
       timeout: cdk.Duration.minutes(5),
       logGroup: new logs.LogGroup(this, "DifferLogGroup", {
         retention: logs.RetentionDays.TWO_WEEKS,
