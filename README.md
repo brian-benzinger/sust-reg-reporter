@@ -4,6 +4,8 @@
 > sourced citations, and per-company applicability.
 
 **Status:** **built, tested, and deployed live** to AWS (us-west-2), end to end.
+**Live at [d3nqxiiky4vzby.cloudfront.net](https://d3nqxiiky4vzby.cloudfront.net)**
+(a custom DiscloseLab domain is next).
 The snapshotting pipeline ingests authoritative sources, content-hash-gates each
 fetch, and runs `semdiff` only on change; the bitemporal corpus (obligations,
 append-only status history, and append-only grounding facts) is persisted in
@@ -95,9 +97,13 @@ live to us-west-2**:
   VPC, a REST API, an ALB, an unbounded log group, or a stray region.
 
 The change-detection path is wired and verified end to end:
-[`semdiff@0.1.0`](https://www.npmjs.com/package/semdiff) is integrated into the
+[`semdiff@0.1.1`](https://www.npmjs.com/package/semdiff) is integrated into the
 differ, with its Anthropic API key stored in an SSM `SecureString` (ADR-0024)
-and the differ kept strictly async, never publicly invokable (ADR-0007).
+and the differ kept strictly async, never publicly invokable (ADR-0007). The
+**change-history** page surfaces a real substantive diff — the EU Omnibus
+(Directive 2026/470) narrowing CSRD scope to a €450M-turnover / 1,000-employee
+threshold — and the differ's LLM spend is guarded by the content-hash gate, a
+per-diff change-set cap, a fail-fast timeout, and no async retries (ADR-0016).
 
 **Web**: the React + TypeScript app in [`web/`](web/)
 ([ADR-0013](adr/0013-static-generation-thin-api.md),
@@ -302,7 +308,7 @@ The full rationale lives in [`adr/`](adr/). Start with the
 ## Build order
 
 1. ✅ **`semdiff`**: the meaning-aware diff engine, published as
-   [`semdiff@0.1.0`](https://www.npmjs.com/package/semdiff) and integrated here.
+   [`semdiff@0.1.1`](https://www.npmjs.com/package/semdiff) and integrated here.
 2. ✅ **`core` domain logic**: status states, applicability engine, and the
    bitemporal resolver, with seed data and a per-file-gated test suite.
 3. ✅ **Infrastructure**: all four CDK stacks deployed (cost backstop, data
