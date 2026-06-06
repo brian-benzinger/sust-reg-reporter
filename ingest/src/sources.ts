@@ -50,8 +50,12 @@ export const SOURCES: readonly SourceConfig[] = [
   },
   {
     key: "eu-csrd-2022-2464",
+    // Track the in-force CONSOLIDATED text, not the immutable act-as-adopted: a
+    // tracker should follow amendments (Omnibus "stop the clock" 2025/794, scope
+    // simplification 2026/470), which only land in the consolidated version. The
+    // CELEX `0…-YYYYMMDD` form pins a specific consolidation date (stable content).
     name: "EU CSRD: Directive (EU) 2022/2464 (consolidated, post-Omnibus)",
-    url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32022L2464",
+    url: "https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:02022L2464-20260318",
     authority: "eur-lex",
   },
 ];

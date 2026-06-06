@@ -9,7 +9,7 @@ import {
   type GroundResult,
   type SeedResult,
 } from "../seed.ts";
-import { SOURCES, type SourceConfig } from "../sources.ts";
+import { SOURCES, getSource, type SourceConfig } from "../sources.ts";
 import { fetchText } from "../io/fetch.ts";
 import { ping, withDsql } from "../io/db.ts";
 import { dsqlSeedDeps } from "../io/obligations.ts";
@@ -54,6 +54,9 @@ interface IngestorEvent {
   readonly deleteSource?: string;
   /** Maintenance: retract one version (and its groundings/diffs) by content hash. */
   readonly deleteVersion?: { readonly sourceKey: string; readonly contentHash: string };
+  /** Maintenance: run the real ingest for a registered source over a provided
+   *  body instead of fetching it (for sources whose endpoint blocks Lambda). */
+  readonly ingestInline?: { readonly sourceKey: string; readonly raw: string };
   /** Maintenance: delete a single diff row by id. */
   readonly deleteDiff?: string;
   /** Maintenance: re-run the differ over a source's latest two versions. */
@@ -102,6 +105,9 @@ export async function handler(event: IngestorEvent = {}): Promise<unknown> {
     const id = event.deleteDiff;
     return { ok: true, deletedDiffs: await withDsql((c) => deleteDiffById(c, id)) };
   }
+  if (event.ingestInline !== undefined) {
+    return runIngestInline(event.ingestInline.sourceKey, event.ingestInline.raw);
+  }
   if (event.rediff !== undefined) {
     return runRediff(event.rediff);
   }
@@ -132,6 +138,34 @@ async function runRediff(sourceKey: string): Promise<unknown> {
   };
   await invokeDiffer(req);
   return { ok: true, requestedDiff: req };
+}
+
+/**
+ * Run the real ingest pipeline for a registered source over a provided body
+ * instead of fetching it. Same extraction, hashing, content-gate, snapshot,
+ * version, and diff request as a scheduled run — only the fetch is replaced.
+ * Used to seed/track a source whose authoritative endpoint blocks the Lambda's
+ * IP (e.g. EUR-Lex's bot challenge), where a body fetched out-of-band is the
+ * same document the endpoint would serve, so the hash stays consistent.
+ */
+async function runIngestInline(sourceKey: string, raw: string): Promise<unknown> {
+  const source = getSource(sourceKey);
+  if (source === undefined) {
+    return { ok: false, reason: "unknown-source", sourceKey };
+  }
+  const bucket = requireEnv("SNAPSHOT_BUCKET");
+  return withDsql(async (client) => {
+    const deps: IngestDeps = {
+      fetchText: async () => ({ text: raw, retrievedAt: new Date().toISOString() }),
+      latestVersion: (key) => latestVersion(client, key),
+      storeSnapshot: async (hash, body) => {
+        await putSnapshotIfAbsent(bucket, hash, body);
+      },
+      recordVersion: (input) => recordVersion(client, input),
+      requestDiff: invokeDiffer,
+    };
+    return { ok: true, result: await ingestSource(deps, source) };
+  });
 }
 
 /** Today as an ISO-8601 `YYYY-MM-DD` string — a grounding's transaction time. */
