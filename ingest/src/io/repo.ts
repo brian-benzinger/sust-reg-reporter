@@ -82,6 +82,12 @@ export async function deleteSourceData(
   };
 }
 
+/** Maintenance: delete a single diff row by id. */
+export async function deleteDiffById(client: pg.Client, id: string): Promise<number> {
+  const r = await client.query("delete from diffs where id = $1", [id]);
+  return r.rowCount ?? 0;
+}
+
 /** Append a diff record (ADR-0007). */
 export async function recordDiff(client: pg.Client, d: DiffRecord): Promise<void> {
   await client.query(
