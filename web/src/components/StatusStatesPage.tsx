@@ -23,28 +23,30 @@ export function StatusStatesPage(): React.ReactElement {
         and is enforcement currently active?
       </p>
       <div className="notice">{NOT_LEGAL_ADVICE}</div>
-      <table className="asof-table">
-        <thead>
-          <tr>
-            <th>State</th>
-            <th>Meaning</th>
-            <th>On the books?</th>
-            <th>Enforcement active?</th>
-          </tr>
-        </thead>
-        <tbody>
-          {REGULATION_STATUSES.map((status) => (
-            <tr key={status}>
-              <td>
-                <StatusBadge status={status} label={statusLabel(status)} />
-              </td>
-              <td>{statusDescription(status)}</td>
-              <td>{isLaw(status) ? "Yes" : "No"}</td>
-              <td>{isCurrentlyEnforced(status) ? "Yes" : "No"}</td>
+      <div className="table-scroll">
+        <table className="asof-table">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>Meaning</th>
+              <th>On the books?</th>
+              <th>Enforcement active?</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {REGULATION_STATUSES.map((status) => (
+              <tr key={status}>
+                <td>
+                  <StatusBadge status={status} label={statusLabel(status)} />
+                </td>
+                <td>{statusDescription(status)}</td>
+                <td>{isLaw(status) ? "Yes" : "No"}</td>
+                <td>{isCurrentlyEnforced(status) ? "Yes" : "No"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <h2>Why &ldquo;stayed&rdquo; is its own state</h2>
       <p>
         A rule can be law while its enforcement is paused, for example,
