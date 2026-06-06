@@ -50,6 +50,38 @@ export async function recordVersion(
   return r.rows[0]!.id;
 }
 
+/** The two most recent versions of a source (newest first) — for re-diffing an
+ *  existing change whose differ run failed (e.g. an earlier OOM). */
+export async function latestTwoVersions(
+  client: pg.Client,
+  sourceKey: string,
+): Promise<Array<{ id: string; contentHash: string }>> {
+  const r = await client.query<{ id: string; content_hash: string }>(
+    `select id, content_hash from source_versions
+     where source_key = $1 order by recorded_at desc limit 2`,
+    [sourceKey],
+  );
+  return r.rows.map((row) => ({ id: row.id, contentHash: row.content_hash }));
+}
+
+/** Maintenance: remove a source and all of its versions and diffs. DSQL has no
+ *  enforced foreign keys, so each table is cleared explicitly. */
+export async function deleteSourceData(
+  client: pg.Client,
+  sourceKey: string,
+): Promise<{ diffs: number; versions: number; sources: number }> {
+  const d = await client.query("delete from diffs where source_key = $1", [sourceKey]);
+  const v = await client.query("delete from source_versions where source_key = $1", [
+    sourceKey,
+  ]);
+  const s = await client.query("delete from sources where source_key = $1", [sourceKey]);
+  return {
+    diffs: d.rowCount ?? 0,
+    versions: v.rowCount ?? 0,
+    sources: s.rowCount ?? 0,
+  };
+}
+
 /** Append a diff record (ADR-0007). */
 export async function recordDiff(client: pg.Client, d: DiffRecord): Promise<void> {
   await client.query(
