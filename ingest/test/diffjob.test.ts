@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import type { Classifier } from "semdiff";
-import { runDiffJob, type DiffDeps, type DiffRecord } from "../src/diffjob.ts";
+import {
+  changesWithText,
+  runDiffJob,
+  type DiffDeps,
+  type DiffRecord,
+} from "../src/diffjob.ts";
 
 const stubClassifier: Classifier = {
   classify: async () => ({
@@ -39,6 +44,27 @@ describe("runDiffJob (ADR-0007)", () => {
     expect(recorded?.sourceKey).toBe("demo");
     expect(recorded?.toVersionId).toBe("v2");
     expect(recorded?.engineVersion).toBe("0.1.1");
-    expect(JSON.parse(recorded!.changes).length).toBeGreaterThan(0);
+    const changes = JSON.parse(recorded!.changes);
+    expect(changes.length).toBeGreaterThan(0);
+    // The persisted change carries the literal before/after prose, not just spans.
+    expect(changes[0].textA).toBe("Companies over $1B must report.");
+    expect(changes[0].textB).toBe("Companies over $500M must report.");
+  });
+});
+
+describe("changesWithText (ADR-0007)", () => {
+  it("slices the before/after text for each span; a null span is empty", () => {
+    const before = "alpha beta gamma";
+    const after = "alpha delta gamma";
+    const changes = [
+      { spanA: { start: 6, end: 10 }, spanB: { start: 6, end: 11 } }, // beta -> delta
+      { spanA: null, spanB: { start: 0, end: 5 } }, // insertion
+      { spanA: { start: 0, end: 5 }, spanB: null }, // deletion
+    ] as unknown as Parameters<typeof changesWithText>[0];
+
+    const out = changesWithText(changes, before, after);
+    expect(out[0]).toMatchObject({ textA: "beta", textB: "delta" });
+    expect(out[1]).toMatchObject({ textA: "", textB: "alpha" });
+    expect(out[2]).toMatchObject({ textA: "alpha", textB: "" });
   });
 });

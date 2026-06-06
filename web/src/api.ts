@@ -161,3 +161,29 @@ export async function fetchDiffs(sourceKey?: string): Promise<DiffsApiResult> {
   if (sourceKey !== undefined) params["source"] = sourceKey;
   return getJson<DiffsApiResult>("/diff", params);
 }
+
+/** One classified change within a diff, with the literal before/after text. */
+export interface DiffChange {
+  readonly type: "insertion" | "deletion" | "modification" | "move";
+  readonly classification: "substantive" | "cosmetic";
+  readonly textA: string;
+  readonly textB: string;
+  readonly confidence: number;
+  readonly needsReview: boolean;
+  readonly description?: string;
+}
+
+export interface DiffDetail extends DiffSummary {
+  readonly fromHash: string | null;
+  readonly toHash: string;
+  readonly schemaVersion: string;
+  readonly modelId: string;
+  readonly promptVersion: string;
+  readonly changes: readonly DiffChange[];
+}
+
+/** Fetch a single diff with its full per-change detail (ADR-0007). */
+export async function fetchDiff(id: string): Promise<DiffDetail> {
+  const r = await getJson<{ diff: DiffDetail }>(`/diff/${encodeURIComponent(id)}`);
+  return r.diff;
+}

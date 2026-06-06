@@ -1,5 +1,24 @@
 import type { Classifier } from "semdiff";
-import { diffSnapshots } from "./diff.ts";
+import { diffSnapshots, type StructuredDiff } from "./diff.ts";
+
+/**
+ * Enrich each change with the literal before/after text its spans point at, so
+ * the persisted (and served) diff carries the changed prose itself — not just
+ * character offsets a reader can't see. Spans are half-open offsets into the
+ * immutable snapshot text (ADR-0007), so this is a pure slice; a null span (a
+ * one-sided insertion or deletion) contributes an empty string on that side.
+ */
+export function changesWithText(
+  changes: StructuredDiff["changes"],
+  before: string,
+  after: string,
+): unknown[] {
+  return changes.map((c) => ({
+    ...c,
+    textA: c.spanA !== null ? before.slice(c.spanA.start, c.spanA.end) : "",
+    textB: c.spanB !== null ? after.slice(c.spanB.start, c.spanB.end) : "",
+  }));
+}
 
 /** What the ingestor hands the differ when a source has changed (ADR-0007). */
 export interface DiffRequest {
@@ -61,7 +80,7 @@ export async function runDiffJob(
     substantive: diff.summary.substantive,
     cosmetic: diff.summary.cosmetic,
     needsReview: diff.summary.needsReview,
-    changes: JSON.stringify(diff.changes),
+    changes: JSON.stringify(changesWithText(diff.changes, before, after)),
   });
   return { substantive: diff.summary.substantive };
 }

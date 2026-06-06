@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, it, expect, vi } from "vitest";
-import { cleanup, render, screen, act } from "@testing-library/react";
+import { cleanup, render, screen, act, fireEvent } from "@testing-library/react";
 import { DiffsIsland, DiffsPage } from "../src/components/DiffsPage.tsx";
 
 afterEach(() => {
@@ -8,9 +8,20 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-vi.mock("../src/api.ts", () => ({ fetchDiffs: vi.fn() }));
+vi.mock("../src/api.ts", () => ({ fetchDiffs: vi.fn(), fetchDiff: vi.fn() }));
 
-const { fetchDiffs } = await import("../src/api.ts");
+const { fetchDiffs, fetchDiff } = await import("../src/api.ts");
+
+const flush = () => act(async () => { await Promise.resolve(); });
+const detail = (changes: unknown[]) => ({
+  ...DIFF,
+  fromHash: "sha256:a",
+  toHash: "sha256:b",
+  schemaVersion: "1.0.0",
+  modelId: "claude",
+  promptVersion: "0",
+  changes,
+});
 
 const DIFF = {
   id: "abc-123",
@@ -75,5 +86,79 @@ describe("DiffsIsland", () => {
     await act(async () => {
       await Promise.resolve();
     });
+  });
+
+  it("expands a row to show per-change detail with before/after text", async () => {
+    vi.mocked(fetchDiffs).mockResolvedValue({ diffs: [DIFF] });
+    vi.mocked(fetchDiff).mockResolvedValue(
+      detail([
+        {
+          type: "modification",
+          classification: "substantive",
+          textA: "over $1B",
+          textB: "over $500M",
+          confidence: 1,
+          needsReview: true,
+          description: "threshold lowered",
+        },
+        {
+          type: "insertion",
+          classification: "cosmetic",
+          textA: "",
+          textB: "A new heading.",
+          confidence: 1,
+          needsReview: false,
+        },
+      ]) as never,
+    );
+    render(<DiffsIsland />);
+    await flush();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "View" }));
+      await Promise.resolve();
+    });
+    expect(screen.getByText("threshold lowered")).toBeTruthy();
+    expect(screen.getByText("over $1B")).toBeTruthy();
+    expect(screen.getByText("over $500M")).toBeTruthy();
+    expect(screen.getByText("A new heading.")).toBeTruthy();
+    expect(screen.getByText("substantive")).toBeTruthy();
+    expect(screen.getByText("cosmetic")).toBeTruthy();
+    expect(screen.getByText("needs review")).toBeTruthy();
+    // Clicking again collapses it.
+    fireEvent.click(screen.getByRole("button", { name: "Hide" }));
+    expect(screen.queryByText("threshold lowered")).toBeNull();
+  });
+
+  it("shows a message when an expanded diff has no individual changes", async () => {
+    vi.mocked(fetchDiffs).mockResolvedValue({ diffs: [DIFF] });
+    vi.mocked(fetchDiff).mockResolvedValue(detail([]) as never);
+    render(<DiffsIsland />);
+    await flush();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "View" }));
+      await Promise.resolve();
+    });
+    expect(screen.getByText(/No individual changes recorded/)).toBeTruthy();
+  });
+
+  it("shows a detail error when fetchDiff rejects", async () => {
+    vi.mocked(fetchDiffs).mockResolvedValue({ diffs: [DIFF] });
+    vi.mocked(fetchDiff).mockRejectedValue(new Error("nope"));
+    render(<DiffsIsland />);
+    await flush();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "View" }));
+      await Promise.resolve();
+    });
+    expect(screen.getByText(/Could not load the change detail/)).toBeTruthy();
+  });
+
+  it("shows a detail loading state while fetchDiff is in flight", async () => {
+    vi.mocked(fetchDiffs).mockResolvedValue({ diffs: [DIFF] });
+    vi.mocked(fetchDiff).mockReturnValue(new Promise(() => {}) as never);
+    render(<DiffsIsland />);
+    await flush();
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
+    expect(screen.getByText(/Loading changes/)).toBeTruthy();
   });
 });
