@@ -10,15 +10,15 @@ export type { StructuredDiff, Change, Span } from "semdiff";
 
 /**
  * The most changed units we will pay an LLM to classify in a single diff
- * (ADR-0016). semdiff classifies one provider call per changed pair, SEQUENTIALLY
- * (~1.5s each), so a whole-document replacement — e.g. a snapshot captured from a
- * failed fetch, or the first version of a newly tracked source diffed against an
- * empty predecessor — would make hundreds-to-thousands of calls and never finish.
- * A genuine amendment is tens of changes (the CSRD Omnibus diff is ~58); beyond
- * this cap a diff is almost certainly structural, so we flag every change for
- * human review instead of classifying it. Kept in step with the differ's Lambda
- * timeout: measured at ~32s fixed (two alignments) + ~1.7s per change, so a
- * cap-sized diff (~100 changes ≈ 200s) fits comfortably inside the 240s wall.
+ * (ADR-0016). semdiff makes one provider call per changed pair, so a
+ * whole-document replacement — e.g. a snapshot captured from a failed fetch, or
+ * the first version of a newly tracked source diffed against an empty predecessor
+ * — would make hundreds-to-thousands of calls. A genuine amendment is tens of
+ * changes (the CSRD Omnibus diff is ~58); beyond this cap a diff is almost
+ * certainly structural, so we flag every change for human review instead of
+ * classifying it. This both bounds LLM spend per diff and keeps a cap-sized diff
+ * well inside the differ's Lambda timeout (semdiff >=0.1.2 classifies the pool
+ * concurrently, so ~100 changes is tens of seconds, not minutes).
  */
 export const MAX_CLASSIFIED_CHANGES = 100;
 
