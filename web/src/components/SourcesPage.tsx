@@ -1,8 +1,34 @@
 import { useState, useEffect } from "react";
 import { fetchSources, type SourceSummary } from "../api.ts";
+import { formatTimestamp } from "../model.ts";
 
 /** The id of the island element (shared with prerender and client hydration). */
 export const SOURCES_ROOT_ID = "sources-root";
+
+/** Authorities behind the tracked sources, with a homepage to learn more. */
+const AUTHORITIES: Record<string, { readonly label: string; readonly url: string }> = {
+  "federal-register": {
+    label: "Federal Register",
+    url: "https://www.federalregister.gov",
+  },
+  "ca-leginfo": {
+    label: "California Legislative Information",
+    url: "https://leginfo.legislature.ca.gov",
+  },
+  "eur-lex": { label: "EUR-Lex", url: "https://eur-lex.europa.eu" },
+};
+
+/** A link to the primary source artifact (or just text if there is no URL). */
+function ExternalLink(props: {
+  readonly href: string;
+  readonly children: React.ReactNode;
+}): React.ReactElement {
+  return (
+    <a href={props.href} target="_blank" rel="nofollow noopener noreferrer">
+      {props.children}
+    </a>
+  );
+}
 
 /** Live island: fetches /api/sources on mount and renders the result. */
 export function SourcesIsland(): React.ReactElement {
@@ -37,14 +63,29 @@ export function SourcesIsland(): React.ReactElement {
           </tr>
         </thead>
         <tbody>
-          {sources.map((s) => (
-            <tr key={s.key}>
-              <td>{s.name}</td>
-              <td>{s.authority}</td>
-              <td>{s.versions}</td>
-              <td>{s.latestRecordedAt ?? "n/a"}</td>
-            </tr>
-          ))}
+          {sources.map((s) => {
+            const authority = AUTHORITIES[s.authority];
+            return (
+              <tr key={s.key}>
+                <td>
+                  <ExternalLink href={s.url}>{s.name}</ExternalLink>
+                </td>
+                <td>
+                  {authority !== undefined ? (
+                    <ExternalLink href={authority.url}>{authority.label}</ExternalLink>
+                  ) : (
+                    s.authority
+                  )}
+                </td>
+                <td>{s.versions}</td>
+                <td>
+                  {s.latestRecordedAt !== null
+                    ? formatTimestamp(s.latestRecordedAt)
+                    : "n/a"}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
