@@ -38,7 +38,7 @@ describe("diffSnapshots (ADR-0007)", () => {
 
   it("stamps the engine provenance and schema version (ADR-0004)", async () => {
     const result = await diffSnapshots("a b c.", "a b c.");
-    expect(result.provenance.engineVersion).toBe("0.1.1");
+    expect(result.provenance.engineVersion).toBe("0.1.2");
     expect(result.schemaVersion).toBe("1.0.0");
   });
 
