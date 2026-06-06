@@ -12,6 +12,7 @@ import type {
 const SOURCE: SourceSummary = {
   key: "fedreg-2026-03157",
   name: "EPA GHG endangerment rescission",
+  url: "https://www.federalregister.gov/documents/full_text/text/2026/02/18/2026-03157.txt",
   authority: "federal-register",
   versions: 2,
   latestRecordedAt: "2026-05-31T23:54:03.255Z",

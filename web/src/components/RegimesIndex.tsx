@@ -1,4 +1,5 @@
 import type { ObligationView, RegimeGroup } from "../model.ts";
+import { regimeLabel } from "../model.ts";
 import type { GroundingApiRow } from "../api.ts";
 import type { GroundingIndex } from "../grounding.ts";
 import { GroundingDisplay, StatusBadge } from "./Badges.tsx";
@@ -49,6 +50,9 @@ export function RegimesIndex(props: {
       {props.groups.map((group) => (
         <section key={group.regime}>
           <h2>{group.regime}</h2>
+          {regimeLabel(group.regime) !== undefined ? (
+            <p className="regime-label">{regimeLabel(group.regime)}</p>
+          ) : null}
           <div className="card-grid">
             {group.obligations.map((view) => {
               const grounding = props.groundings?.get(view.id);
