@@ -14,6 +14,7 @@ import { fetchText } from "../io/fetch.ts";
 import { ping, withDsql } from "../io/db.ts";
 import { dsqlSeedDeps } from "../io/obligations.ts";
 import {
+  deleteDiffById,
   deleteSourceData,
   latestTwoVersions,
   latestVersion,
@@ -49,6 +50,8 @@ interface IngestorEvent {
   readonly demo?: { readonly before: string; readonly after: string };
   /** Maintenance: delete a source and all its versions and diffs (e.g. "demo"). */
   readonly deleteSource?: string;
+  /** Maintenance: delete a single diff row by id. */
+  readonly deleteDiff?: string;
   /** Maintenance: re-run the differ over a source's latest two versions. */
   readonly rediff?: string;
 }
@@ -83,6 +86,10 @@ export async function handler(event: IngestorEvent = {}): Promise<unknown> {
   if (event.deleteSource !== undefined) {
     const key = event.deleteSource;
     return { ok: true, deleted: await withDsql((c) => deleteSourceData(c, key)) };
+  }
+  if (event.deleteDiff !== undefined) {
+    const id = event.deleteDiff;
+    return { ok: true, deletedDiffs: await withDsql((c) => deleteDiffById(c, id)) };
   }
   if (event.rediff !== undefined) {
     return runRediff(event.rediff);
