@@ -11,9 +11,9 @@ export interface SourceConfig {
 
 /**
  * v1 source registry (ADR-0008, ADR-0009), one authoritative source per regime:
- * a Federal Register document exercises the pipeline; California SB 261 (leginfo)
- * and EU CSRD (EUR-Lex) are the public-domain primary sources for the CA and EU
- * regimes.
+ * a Federal Register document exercises the pipeline; California SB 253 and
+ * SB 261 (leginfo) and EU CSRD (EUR-Lex) are the public-domain primary sources
+ * for the CA and EU regimes.
  *
  * ISSB (IFRS S1/S2) has NO source here and is deferred from v1 (ADR-0027): the
  * IFRS Foundation publishes the standards text under copyright, and its terms
@@ -27,6 +27,12 @@ export const SOURCES: readonly SourceConfig[] = [
     name: "EPA — Rescission of the GHG Endangerment Finding (FR 2026-03157)",
     url: "https://www.federalregister.gov/documents/full_text/text/2026/02/18/2026-03157.txt",
     authority: "federal-register",
+  },
+  {
+    key: "ca-sb253-2023",
+    name: "California SB 253 (2023) — Climate Corporate Data Accountability Act",
+    url: "https://leginfo.legislature.ca.gov/faces/billTextClient.xhtml?bill_id=202320240SB253",
+    authority: "ca-leginfo",
   },
   {
     key: "ca-sb261-2023",

@@ -39,6 +39,7 @@ export const SB_253: Obligation = {
     label: "California SB 253 (2023)",
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
+  sourceKey: "ca-sb253-2023",
 };
 
 export const SB_261: Obligation = {
@@ -58,9 +59,8 @@ export const SB_261: Obligation = {
     label: "California SB 261 (2023)",
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
-  // SB 261's bill text is a registered source (ADR-0028); the pipeline grounds
-  // this obligation to its latest ingested snapshot. SB 253 has no registered
-  // source yet, so it carries no `sourceKey` and stays visibly ungrounded.
+  // Both SB 261's and SB 253's bill texts are registered sources (ADR-0028); the
+  // pipeline grounds each obligation to its latest ingested leginfo snapshot.
   sourceKey: "ca-sb261-2023",
 };
 
