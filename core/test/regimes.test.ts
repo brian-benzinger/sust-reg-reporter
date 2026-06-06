@@ -30,13 +30,11 @@ describe("v1 corpus aggregate (ADR-0009, ADR-0027)", () => {
 
   it("registers a sourceKey for obligations with an authoritative source (ADR-0028)", () => {
     const byId = new Map(ALL_OBLIGATIONS.map((o) => [o.id, o]));
-    // SB 261 and both CSRD waves have a registered primary source to ground to.
+    // Each CA bill and both CSRD waves have a registered primary source to ground to.
+    expect(byId.get("ca-sb253-ghg-disclosure")?.sourceKey).toBe("ca-sb253-2023");
     expect(byId.get("ca-sb261-climate-risk-report")?.sourceKey).toBe("ca-sb261-2023");
     expect(byId.get("eu-csrd-esrs-wave1")?.sourceKey).toBe("eu-csrd-2022-2464");
     expect(byId.get("eu-csrd-esrs-wave2")?.sourceKey).toBe("eu-csrd-2022-2464");
-    // SB 253's bill text is not a registered source yet → no sourceKey, stays
-    // honestly ungrounded.
-    expect(byId.get("ca-sb253-ghg-disclosure")?.sourceKey).toBeUndefined();
   });
 
   it("pairs every status history with a real obligation and ISO dates", () => {
