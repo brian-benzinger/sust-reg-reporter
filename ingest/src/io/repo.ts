@@ -16,7 +16,8 @@ export async function latestVersion(
   return row ? { id: row.id, contentHash: row.content_hash } : undefined;
 }
 
-/** Ensure the source row exists, then append an immutable version; return its id. */
+/** Ensure the source row exists (refreshing its display metadata from the
+ *  registry), then append an immutable version; return its id. */
 export async function recordVersion(
   client: pg.Client,
   input: {
@@ -32,6 +33,14 @@ export async function recordVersion(
   if (exists.rowCount === 0) {
     await client.query(
       "insert into sources (source_key, name, url, authority) values ($1,$2,$3,$4)",
+      [input.source.key, input.source.name, input.source.url, input.source.authority],
+    );
+  } else {
+    // The registry is the source of truth for display metadata: refresh
+    // name/url/authority when it changes (e.g. a renamed source or a switch to a
+    // viewable link). Versions are immutable and untouched.
+    await client.query(
+      "update sources set name = $2, url = $3, authority = $4 where source_key = $1",
       [input.source.key, input.source.name, input.source.url, input.source.authority],
     );
   }

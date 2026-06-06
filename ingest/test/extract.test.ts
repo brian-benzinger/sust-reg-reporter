@@ -16,6 +16,28 @@ describe("extractText — Federal Register (ADR-0008)", () => {
       "just plain text",
     );
   });
+
+  it("strips the inline anchors the GPO format embeds, keeping visible text", () => {
+    // The GPO raw-text format sprinkles links into the <pre> body, including
+    // Cloudflare email obfuscation whose data-cfemail token rotates per fetch —
+    // the noise that manufactures phantom diffs. Visible prose must survive; the
+    // tags (and that rotating attribute) must not.
+    const raw =
+      '<html><body><pre>Contact <a href="http://www.gpo.gov">www.gpo.gov</a> or ' +
+      '<a href="/cdn-cgi/l/email-protection" data-cfemail="9af2b1">[email&#160;protected]</a> ' +
+      "today.</pre></body></html>";
+    expect(extractText(raw, "federal-register")).toBe(
+      "Contact www.gpo.gov or [email protected] today.",
+    );
+  });
+
+  it("produces identical text when only the rotating cfemail token differs", () => {
+    const doc = (token: string): string =>
+      `<html><body><pre>Email <a href="/cdn-cgi/l/email-protection" data-cfemail="${token}">[email protected]</a>.</pre></body></html>`;
+    expect(extractText(doc("aaaa11"), "federal-register")).toBe(
+      extractText(doc("bbbb22"), "federal-register"),
+    );
+  });
 });
 
 it("passes unknown authorities through unchanged", () => {

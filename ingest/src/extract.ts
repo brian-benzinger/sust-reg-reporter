@@ -11,7 +11,10 @@
  *
  * Per authority:
  *  - `federal-register`: the raw-text endpoint wraps the document in a minimal
- *    `<html><body><pre>…</pre>` shell, so we take the `<pre>` content.
+ *    `<html><body><pre>…</pre>` shell; we take the `<pre>` content and strip the
+ *    inline anchors the GPO format embeds — plain links plus Cloudflare email
+ *    obfuscation whose `data-cfemail` token rotates per fetch — leaving stable
+ *    prose. (Without this, that rotating token alone manufactures phantom diffs.)
  *  - `ca-leginfo` (California bill text) and `eur-lex` (EU legislation): full
  *    HTML pages, reduced to text by dropping every tag — and therefore every
  *    attribute, where the rotating tokens above live — along with the
@@ -40,7 +43,14 @@ export function extractText(raw: string, authority: string): string {
 function fromFederalRegister(raw: string): string {
   const match = /<pre>([\s\S]*?)<\/pre>/i.exec(raw);
   const inner = match?.[1];
-  return inner !== undefined ? decodeEntities(inner).trim() : raw;
+  if (inner === undefined) return raw;
+  // The <pre> body is document text, but the GPO format sprinkles inline anchors
+  // into it: plain links (`<a href="http://www.gpo.gov">www.gpo.gov</a>`) and
+  // Cloudflare email-obfuscation anchors carrying a `data-cfemail` token that
+  // rotates on every fetch. Strip the tags (and that rotating attribute) so the
+  // hash/diff see only the stable visible prose, never the chrome.
+  const stripped = inner.replace(/<[^>]+>/g, "");
+  return collapse(decodeEntities(stripped));
 }
 
 /** Elements whose content is never document text (and is often volatile). */
