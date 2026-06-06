@@ -110,6 +110,30 @@ describe.each(["ca-leginfo", "eur-lex"])(
   },
 );
 
+describe("extractText — EUR-Lex content narrowing (ADR-0007, ADR-0008)", () => {
+  it("narrows to the document container, dropping the EUR-Lex version chrome", () => {
+    const raw =
+      "<html><body>" +
+      '<div id="documentView"><p>Access current version (18/03/2026)</p>' +
+      "<p>Document 02022L2464-20250417</p></div>" +
+      '<div id="text"><div id="document1">' +
+      "<p>Article 1. Covered undertakings shall report sustainability information.</p>" +
+      "</div></div></body></html>";
+    const out = extractText(raw, "eur-lex");
+    expect(out).toContain(
+      "Article 1. Covered undertakings shall report sustainability information.",
+    );
+    // The version-metadata chrome that precedes the content is excluded.
+    expect(out).not.toContain("Access current version");
+    expect(out).not.toContain("Document 02022L2464");
+  });
+
+  it("falls back to the whole page when the content marker is absent", () => {
+    const raw = '<html><body><div id="bill"><p>Article 2. Text.</p></div></body></html>';
+    expect(extractText(raw, "eur-lex")).toBe("Article 2. Text.");
+  });
+});
+
 describe("extractText — HTML text shaping", () => {
   it("separates block elements and line breaks so text does not merge", () => {
     const html = "<div><p>Line A<br>Line B</p><p>Line C</p></div>";
