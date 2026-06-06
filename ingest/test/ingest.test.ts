@@ -19,9 +19,13 @@ function makeDeps(latest: { id: string; contentHash: string } | undefined) {
     stored: [] as string[],
     versions: 0,
     diffs: [] as { fromVersionId: string; toVersionId: string }[],
+    fetched: [] as string[],
   };
   const deps: IngestDeps = {
-    fetchText: async () => ({ text: BODY, retrievedAt: "2026-05-31T00:00:00Z" }),
+    fetchText: async (url: string) => {
+      calls.fetched.push(url);
+      return { text: BODY, retrievedAt: "2026-05-31T00:00:00Z" };
+    },
     latestVersion: async () => latest,
     storeSnapshot: async (h) => {
       calls.stored.push(h);
@@ -55,6 +59,23 @@ describe("ingestSource (ADR-0010, ADR-0007)", () => {
     expect(calls.stored).toEqual([EXPECTED_HASH]);
     expect(calls.versions).toBe(1);
     expect(calls.diffs).toHaveLength(0);
+  });
+
+  it("fetches the display url when no separate fetchUrl is set", async () => {
+    const { deps, calls } = makeDeps(undefined);
+    await ingestSource(deps, source);
+    expect(calls.fetched).toEqual(["https://example.test/doc.txt"]);
+  });
+
+  it("fetches fetchUrl for content when it differs from the viewable url", async () => {
+    const { deps, calls } = makeDeps(undefined);
+    await ingestSource(deps, {
+      ...source,
+      url: "https://example.test/viewable.html",
+      fetchUrl: "https://example.test/raw.txt",
+    });
+    // Content comes from fetchUrl; the viewable url is only for display.
+    expect(calls.fetched).toEqual(["https://example.test/raw.txt"]);
   });
 
   it("stores a changed version and requests a diff against the prior version", async () => {
