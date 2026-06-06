@@ -21,6 +21,13 @@ export const DEFAULT_BUDGET_EMAIL = "bb42392@gmail.com";
  */
 export const DEFAULT_REGION = "us-west-2";
 
+/**
+ * The custom domain for the live site (ADR-0031). Registered at Vercel for
+ * consolidated renewal tracking; DNS is delegated to a Route 53 hosted zone
+ * (the DnsStack) which is authoritative.
+ */
+export const CUSTOM_DOMAIN = "disclosurelab.dev";
+
 /** Resolve the single CDK deployment environment (account + region). */
 export function appEnv(): Environment {
   const region = process.env.CDK_DEPLOY_REGION || DEFAULT_REGION;
