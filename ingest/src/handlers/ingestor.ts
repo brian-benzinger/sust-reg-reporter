@@ -13,7 +13,12 @@ import { SOURCES, type SourceConfig } from "../sources.ts";
 import { fetchText } from "../io/fetch.ts";
 import { ping, withDsql } from "../io/db.ts";
 import { dsqlSeedDeps } from "../io/obligations.ts";
-import { latestVersion, recordVersion } from "../io/repo.ts";
+import {
+  deleteSourceData,
+  latestTwoVersions,
+  latestVersion,
+  recordVersion,
+} from "../io/repo.ts";
 import { putSnapshotIfAbsent } from "../io/s3.ts";
 import { ensureSchema, ensureReaderRole } from "../io/schema.ts";
 
@@ -42,6 +47,10 @@ interface IngestorEvent {
   readonly dbGrants?: { readonly role: string; readonly iamRoleArn: string };
   readonly corpusSeed?: boolean;
   readonly demo?: { readonly before: string; readonly after: string };
+  /** Maintenance: delete a source and all its versions and diffs (e.g. "demo"). */
+  readonly deleteSource?: string;
+  /** Maintenance: re-run the differ over a source's latest two versions. */
+  readonly rediff?: string;
 }
 
 /**
@@ -71,10 +80,40 @@ export async function handler(event: IngestorEvent = {}): Promise<unknown> {
   if (event.corpusSeed === true) {
     return runCorpusSeed();
   }
+  if (event.deleteSource !== undefined) {
+    const key = event.deleteSource;
+    return { ok: true, deleted: await withDsql((c) => deleteSourceData(c, key)) };
+  }
+  if (event.rediff !== undefined) {
+    return runRediff(event.rediff);
+  }
   if (event.demo !== undefined) {
     return runDemo(event.demo);
   }
   return runIngest();
+}
+
+/**
+ * Re-run the differ over a source's latest two versions (ADR-0007). Used to
+ * produce a diff for a change whose original differ run failed (e.g. an earlier
+ * out-of-memory error); content-addressed and async, so it never re-bills an
+ * unchanged source.
+ */
+async function runRediff(sourceKey: string): Promise<unknown> {
+  const versions = await withDsql((c) => latestTwoVersions(c, sourceKey));
+  if (versions.length < 2) {
+    return { ok: false, reason: "need-two-versions", have: versions.length };
+  }
+  const [to, from] = versions; // newest first
+  const req: DiffRequest = {
+    sourceKey,
+    fromVersionId: from!.id,
+    fromHash: from!.contentHash,
+    toVersionId: to!.id,
+    toHash: to!.contentHash,
+  };
+  await invokeDiffer(req);
+  return { ok: true, requestedDiff: req };
 }
 
 /** Today as an ISO-8601 `YYYY-MM-DD` string — a grounding's transaction time. */
