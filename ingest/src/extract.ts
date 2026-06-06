@@ -15,11 +15,16 @@
  *    inline anchors the GPO format embeds — plain links plus Cloudflare email
  *    obfuscation whose `data-cfemail` token rotates per fetch — leaving stable
  *    prose. (Without this, that rotating token alone manufactures phantom diffs.)
- *  - `ca-leginfo` (California bill text) and `eur-lex` (EU legislation): full
- *    HTML pages, reduced to text by dropping every tag — and therefore every
- *    attribute, where the rotating tokens above live — along with the
- *    non-content elements (`script`/`style`/`head`/`nav`/`header`/`footer`/…)
- *    and collapsing whitespace.
+ *  - `ca-leginfo` (California bill text): full HTML page, reduced to text by
+ *    dropping every tag — and therefore every attribute, where the rotating
+ *    tokens above live — along with the non-content elements
+ *    (`script`/`style`/`head`/`nav`/`header`/`footer`/…) and collapsing
+ *    whitespace.
+ *  - `eur-lex` (EU legislation): same reduction, but first narrowed to the
+ *    document content container, because EUR-Lex precedes the legal text with a
+ *    version-metadata box ("Document 0…", "Access current version (…)") and a
+ *    consolidation-version switcher that change between consolidations and would
+ *    otherwise dominate a diff with non-legal "changes".
  *  - anything else passes through unchanged (e.g. the inline demo source).
  *
  * NOTE: this neutralizes the dominant volatile sources (attributes, scripts,
@@ -33,11 +38,25 @@ export function extractText(raw: string, authority: string): string {
     case "federal-register":
       return fromFederalRegister(raw);
     case "ca-leginfo":
-    case "eur-lex":
       return htmlToText(raw);
+    case "eur-lex":
+      return fromEurLex(raw);
     default:
       return raw;
   }
+}
+
+/**
+ * EUR-Lex legal text lives in `<div id="document1">` (within `id="text"`),
+ * preceded by the EUR-Lex shell: breadcrumbs, the version-metadata box, and the
+ * consolidation switcher — chrome that differs between consolidation dates. We
+ * narrow to the content container so the hash/diff see only the act's text. If
+ * the marker is absent we fall back to the whole page (htmlToText still drops
+ * scripts/nav/header/footer), degrading to the prior behavior rather than empty.
+ */
+function fromEurLex(raw: string): string {
+  const m = /<div\b[^>]*\bid="(?:document1|text)"/i.exec(raw);
+  return htmlToText(m ? raw.slice(m.index) : raw);
 }
 
 function fromFederalRegister(raw: string): string {
