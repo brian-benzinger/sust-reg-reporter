@@ -17,9 +17,10 @@ export type { StructuredDiff, Change, Span } from "semdiff";
  * A genuine amendment is tens of changes (the CSRD Omnibus diff is ~58); beyond
  * this cap a diff is almost certainly structural, so we flag every change for
  * human review instead of classifying it. Kept in step with the differ's Lambda
- * timeout: a cap-sized diff (≈cap × 1.5s) must comfortably fit inside it.
+ * timeout: measured at ~32s fixed (two alignments) + ~1.7s per change, so a
+ * cap-sized diff (~100 changes ≈ 200s) fits comfortably inside the 240s wall.
  */
-export const MAX_CLASSIFIED_CHANGES = 120;
+export const MAX_CLASSIFIED_CHANGES = 100;
 
 /**
  * A no-cost classifier that abstains on every pair using semdiff's canonical
