@@ -16,9 +16,11 @@ import { dsqlSeedDeps } from "../io/obligations.ts";
 import {
   deleteDiffById,
   deleteSourceData,
+  deleteVersion,
   latestTwoVersions,
   latestVersion,
   recordVersion,
+  upsertSourceMeta,
 } from "../io/repo.ts";
 import { putSnapshotIfAbsent } from "../io/s3.ts";
 import { ensureSchema, ensureReaderRole } from "../io/schema.ts";
@@ -50,6 +52,8 @@ interface IngestorEvent {
   readonly demo?: { readonly before: string; readonly after: string };
   /** Maintenance: delete a source and all its versions and diffs (e.g. "demo"). */
   readonly deleteSource?: string;
+  /** Maintenance: retract one version (and its groundings/diffs) by content hash. */
+  readonly deleteVersion?: { readonly sourceKey: string; readonly contentHash: string };
   /** Maintenance: delete a single diff row by id. */
   readonly deleteDiff?: string;
   /** Maintenance: re-run the differ over a source's latest two versions. */
@@ -86,6 +90,13 @@ export async function handler(event: IngestorEvent = {}): Promise<unknown> {
   if (event.deleteSource !== undefined) {
     const key = event.deleteSource;
     return { ok: true, deleted: await withDsql((c) => deleteSourceData(c, key)) };
+  }
+  if (event.deleteVersion !== undefined) {
+    const { sourceKey, contentHash } = event.deleteVersion;
+    return {
+      ok: true,
+      deleted: await withDsql((c) => deleteVersion(c, sourceKey, contentHash)),
+    };
   }
   if (event.deleteDiff !== undefined) {
     const id = event.deleteDiff;
@@ -169,6 +180,9 @@ async function runIngest(): Promise<{
     };
     const results: IngestResult[] = [];
     for (const source of SOURCES) {
+      // Keep display metadata in sync with the registry on every pass, even when
+      // the content is unchanged (ingestSource only records on a content change).
+      await upsertSourceMeta(client, source);
       results.push(await ingestSource(deps, source));
     }
     // After any new snapshots are recorded, (re-)ground obligations to their
