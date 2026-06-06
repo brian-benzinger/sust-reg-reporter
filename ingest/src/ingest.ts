@@ -25,7 +25,18 @@ export interface IngestResult {
   readonly changed: boolean;
   readonly contentHash: string;
   readonly diffRequested: boolean;
+  /** Set when the fetch was discarded as a failed/insubstantial response. */
+  readonly skipped?: "insubstantial-content";
 }
+
+/**
+ * Minimum normalized characters for a fetch to count as a real document. Our
+ * tracked sources are full legal texts (many KB); a bot challenge, cookie wall,
+ * or outage page normalizes to far less — often nothing. Below this floor we
+ * treat the fetch as failed rather than a change (ADR-0017), so it can never
+ * become a snapshot, a phantom diff, or an empty grounding.
+ */
+const MIN_CONTENT_CHARS = 200;
 
 /**
  * Ingest one source (ADR-0010): fetch → normalize → content-hash → gate. On a
@@ -40,6 +51,16 @@ export async function ingestSource(
   const fetched = await deps.fetchText(source.fetchUrl ?? source.url);
   const text = extractText(fetched.text, source.authority);
   const hash = contentHash(text);
+
+  if (text.trim().length < MIN_CONTENT_CHARS) {
+    return {
+      sourceKey: source.key,
+      changed: false,
+      contentHash: hash,
+      diffRequested: false,
+      skipped: "insubstantial-content",
+    };
+  }
 
   const latest = await deps.latestVersion(source.key);
   if (!hasChanged(hash, latest?.contentHash)) {

@@ -11,7 +11,13 @@ const source: SourceConfig = {
   authority: "federal-register",
 };
 
-const BODY = "<pre>Covered entities must report annually.</pre>";
+// Long enough to clear the insubstantial-content floor (a real document).
+const BODY =
+  "<pre>Covered entities must prepare and submit an annual climate-related " +
+  "financial risk report disclosing greenhouse gas emissions, governance, " +
+  "strategy, targets, and transition plans in accordance with the applicable " +
+  "framework, and shall make the report available to the public on the " +
+  "entity's website no later than the prescribed reporting deadline.</pre>";
 const EXPECTED_HASH = contentHash(extractText(BODY, "federal-register"));
 
 function makeDeps(latest: { id: string; contentHash: string } | undefined) {
@@ -58,6 +64,24 @@ describe("ingestSource (ADR-0010, ADR-0007)", () => {
     expect(r.diffRequested).toBe(false);
     expect(calls.stored).toEqual([EXPECTED_HASH]);
     expect(calls.versions).toBe(1);
+    expect(calls.diffs).toHaveLength(0);
+  });
+
+  it("skips an insubstantial fetch without recording, diffing, or grounding", async () => {
+    // Simulate a bot-challenge / cookie-wall response that normalizes to nothing.
+    const { deps, calls } = makeDeps({ id: "v1", contentHash: "sha256:good" });
+    const stripped: IngestDeps = {
+      ...deps,
+      fetchText: async () => ({
+        text: "<html><body><script>challenge()</script></body></html>",
+        retrievedAt: "2026-05-31T00:00:00Z",
+      }),
+    };
+    const r = await ingestSource(stripped, { ...source, authority: "eur-lex" });
+    expect(r.changed).toBe(false);
+    expect(r.skipped).toBe("insubstantial-content");
+    expect(calls.stored).toHaveLength(0);
+    expect(calls.versions).toBe(0);
     expect(calls.diffs).toHaveLength(0);
   });
 
