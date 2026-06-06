@@ -26,6 +26,7 @@ describe("SourcesIsland", () => {
         {
           key: "fedreg-001",
           name: "EPA Endangerment Rule",
+          url: "https://example.gov/epa",
           authority: "federal-register",
           versions: 3,
           latestRecordedAt: "2026-05-31T00:00:00Z",
@@ -36,10 +37,15 @@ describe("SourcesIsland", () => {
     await act(async () => {
       await Promise.resolve();
     });
-    expect(screen.getByText("EPA Endangerment Rule")).toBeTruthy();
-    expect(screen.getByText("federal-register")).toBeTruthy();
+    // The source name links to its artifact; the authority links to its homepage.
+    const name = screen.getByText("EPA Endangerment Rule");
+    expect(name.closest("a")?.getAttribute("href")).toBe("https://example.gov/epa");
+    expect(screen.getByText("Federal Register").closest("a")?.getAttribute("href")).toBe(
+      "https://www.federalregister.gov",
+    );
     expect(screen.getByText("3")).toBeTruthy();
-    expect(screen.getByText("2026-05-31T00:00:00Z")).toBeTruthy();
+    // The ISO timestamp is shown as a compact UTC date+time.
+    expect(screen.getByText("2026-05-31 00:00 UTC")).toBeTruthy();
   });
 
   it("renders n/a when latestRecordedAt is null", async () => {
@@ -48,6 +54,7 @@ describe("SourcesIsland", () => {
         {
           key: "x",
           name: "Unscheduled Source",
+          url: "https://example.gov/x",
           authority: "manual",
           versions: 0,
           latestRecordedAt: null,

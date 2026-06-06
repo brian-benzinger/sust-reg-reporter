@@ -60,6 +60,29 @@ export function plural(n: number, noun: string): string {
 }
 
 /**
+ * Format an ISO timestamp as a compact UTC date and time, e.g.
+ * `2026-06-03T06:00:17.947Z` becomes `2026-06-03 06:00 UTC`. Locale-independent
+ * (a plain slice) so it renders identically everywhere.
+ */
+export function formatTimestamp(iso: string): string {
+  const date = iso.slice(0, 10);
+  const time = iso.slice(11, 16);
+  return /^\d{2}:\d{2}$/.test(time) ? `${date} ${time} UTC` : date;
+}
+
+/** Plain-English name for each regime code, shown under the code on the regimes index. */
+const REGIME_LABELS: Record<string, string> = {
+  "CA-SB253": "California Climate Corporate Data Accountability Act (GHG emissions disclosure)",
+  "CA-SB261": "California Climate-Related Financial Risk Act",
+  "EU-CSRD": "EU Corporate Sustainability Reporting Directive (ESRS)",
+};
+
+/** The plain-English name for a regime code, if known. */
+export function regimeLabel(regime: string): string | undefined {
+  return REGIME_LABELS[regime];
+}
+
+/**
  * Translate the applicability criteria into a list of plain-fact sentences —
  * one per constrained axis. An omitted axis is "no constraint" and produces no
  * sentence; if nothing is constrained at all, a single explicit sentence says

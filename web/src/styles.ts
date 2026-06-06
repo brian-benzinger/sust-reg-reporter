@@ -333,6 +333,14 @@ h1 { font-size: var(--fs-h1); line-height: 1.15; letter-spacing: -0.02em; margin
 h2 { font-size: var(--fs-h2); line-height: 1.25; letter-spacing: -0.01em; margin: 2.25rem 0 0.6rem; }
 h3 { font-size: 1.05rem; margin: 1.25rem 0 0.25rem; }
 
+/* Plain-English name under a regime code on the regimes index. */
+.regime-label {
+  margin: -0.4rem 0 1rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
 p.lead { font-size: var(--fs-lead); color: var(--muted); margin-top: 0; max-width: 46rem; }
 
 /* ---- Hero (home) ----------------------------------------------------- */

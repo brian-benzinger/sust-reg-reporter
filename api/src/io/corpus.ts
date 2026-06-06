@@ -126,17 +126,18 @@ const DIFF_COLUMNS = `id, source_key, from_version_id, to_version_id,
 function listSources(): Promise<SourceSummary[]> {
   return withDsql(async (c) => {
     const r = await c.query(
-      `select s.source_key, s.name, s.authority,
+      `select s.source_key, s.name, s.url, s.authority,
               count(v.id)::int as versions,
               max(v.recorded_at) as latest_recorded_at
        from sources s
        left join source_versions v on v.source_key = s.source_key
-       group by s.source_key, s.name, s.authority
+       group by s.source_key, s.name, s.url, s.authority
        order by s.source_key`,
     );
     return r.rows.map((row) => ({
       key: row.source_key,
       name: row.name,
+      url: row.url,
       authority: row.authority,
       versions: row.versions,
       latestRecordedAt: iso(row.latest_recorded_at),

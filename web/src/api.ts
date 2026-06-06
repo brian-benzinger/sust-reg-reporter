@@ -121,6 +121,8 @@ export async function fetchGrounding(): Promise<GroundingApiResult> {
 export interface SourceSummary {
   readonly key: string;
   readonly name: string;
+  /** Canonical URL of the authoritative source document. */
+  readonly url: string;
   readonly authority: string;
   readonly versions: number;
   readonly latestRecordedAt: string | null;
