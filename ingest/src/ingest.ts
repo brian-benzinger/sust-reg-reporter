@@ -37,7 +37,7 @@ export async function ingestSource(
   deps: IngestDeps,
   source: SourceConfig,
 ): Promise<IngestResult> {
-  const fetched = await deps.fetchText(source.url);
+  const fetched = await deps.fetchText(source.fetchUrl ?? source.url);
   const text = extractText(fetched.text, source.authority);
   const hash = contentHash(text);
 
