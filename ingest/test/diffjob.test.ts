@@ -38,7 +38,7 @@ describe("runDiffJob (ADR-0007)", () => {
     expect(recorded).toBeDefined();
     expect(recorded?.sourceKey).toBe("demo");
     expect(recorded?.toVersionId).toBe("v2");
-    expect(recorded?.engineVersion).toBe("0.1.0");
+    expect(recorded?.engineVersion).toBe("0.1.1");
     expect(JSON.parse(recorded!.changes).length).toBeGreaterThan(0);
   });
 });
