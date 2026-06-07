@@ -4,8 +4,8 @@
 > sourced citations, and per-company applicability.
 
 **Status:** **built, tested, and deployed live** to AWS (us-west-2), end to end.
-**Live at [d3nqxiiky4vzby.cloudfront.net](https://d3nqxiiky4vzby.cloudfront.net)**
-(a custom DiscloseLab domain is next).
+**Live at [disclosurelab.dev](https://disclosurelab.dev)** (`www` redirects to
+the apex; HTTPS via CloudFront + ACM).
 The snapshotting pipeline ingests authoritative sources, content-hash-gates each
 fetch, and runs `semdiff` only on change; the bitemporal corpus (obligations,
 append-only status history, and append-only grounding facts) is persisted in
