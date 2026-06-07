@@ -53,17 +53,9 @@ new PipelineStack(app, "SustReg-Pipeline", {
     "sust-reg-reporter ingest pipeline: EventBridge-scheduled ingestor + differ Lambdas (ADR-0010).",
 });
 
-// Serving layer (ADR-0013, ADR-0014): one CloudFront fronting the static web
-// site and the thin API (/api/*) Lambda Function URL.
-new ServingStack(app, "SustReg-Serving", {
-  env,
-  description:
-    "sust-reg-reporter serving layer: CloudFront + private web bucket + thin API Lambda Function URL (ADR-0013, ADR-0014).",
-});
-
 // Authoritative DNS for the custom domain (ADR-0031). Registered at Vercel,
 // nameservers delegated to this RETAINed hosted zone. Foundational and rarely
-// touched; the ACM cert + CloudFront apex alias (follow-up) reference it by id.
+// touched; the cert and the serving alias records reference it by id.
 new DnsStack(app, "SustReg-Dns", {
   env,
   domainName: CUSTOM_DOMAIN,
@@ -74,13 +66,30 @@ new DnsStack(app, "SustReg-Dns", {
 // CloudFront viewer certificate (ADR-0032). Pinned to us-east-1 (CloudFront's
 // only accepted cert region) — the lone, narrowly-allowed exception to the
 // single-region guard below. DNS-validated against the zone above; consumed
-// cross-region by the serving stack (follow-up).
-new CertStack(app, CERT_STACK_ID, {
+// cross-region by the serving stack, so both sides set crossRegionReferences.
+const certStack = new CertStack(app, CERT_STACK_ID, {
   env: { account: env.account, region: "us-east-1" },
+  crossRegionReferences: true,
   domainName: CUSTOM_DOMAIN,
   hostedZoneId: HOSTED_ZONE_ID,
   description:
     "sust-reg-reporter CloudFront viewer certificate (us-east-1) for the custom domain, DNS-validated via Route 53 (ADR-0032).",
+});
+
+// Serving layer (ADR-0013, ADR-0023): one CloudFront fronting the static web
+// site and the thin API (/api/*). Served on the custom domain (apex + www) over
+// HTTPS using the us-east-1 cert above (cross-region reference) with Route 53
+// alias records and a www->apex redirect (ADR-0031, ADR-0032).
+new ServingStack(app, "SustReg-Serving", {
+  env,
+  crossRegionReferences: true,
+  customDomain: {
+    domainName: CUSTOM_DOMAIN,
+    certificate: certStack.certificate,
+    hostedZoneId: HOSTED_ZONE_ID,
+  },
+  description:
+    "sust-reg-reporter serving layer: CloudFront (custom domain) + private web bucket + thin API HTTP API (ADR-0013, ADR-0023, ADR-0031).",
 });
 
 // Cost-discipline guardrails, enforced at synth time (ADR-0016, ADR-0014).
