@@ -35,7 +35,7 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
   const pages: PageSpec[] = [
     {
       path: "index.html",
-      title: "DiscloseLab",
+      title: "disclosureLab",
       description:
         "Version-tracked climate disclosure regulations with primary-source citations, effective dates, and per-company applicability.",
       canonicalPath: "/index.html",
@@ -44,7 +44,7 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
     },
     {
       path: "regimes/index.html",
-      title: "Regimes · DiscloseLab",
+      title: "Regimes · disclosureLab",
       description: "Disclosure obligations in the v1 corpus, grouped by regime.",
       canonicalPath: "/regimes/index.html",
       // Hydrated to overlay live grounding (ADR-0028); the prerendered markup
@@ -58,7 +58,7 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
     },
     {
       path: "scope-checker.html",
-      title: "Scope checker · DiscloseLab",
+      title: "Scope checker · disclosureLab",
       description:
         "Enter a company profile to see which modeled disclosure obligations apply and by when.",
       canonicalPath: "/scope-checker.html",
@@ -67,7 +67,7 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
     },
     {
       path: "as-of.html",
-      title: "As-of-date slider · DiscloseLab",
+      title: "As-of-date slider · disclosureLab",
       description:
         "See what was in effect on a given date, and what we believed was in effect as of a chosen knowledge date.",
       canonicalPath: "/as-of.html",
@@ -76,7 +76,7 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
     },
     {
       path: "sources.html",
-      title: "Tracked sources · DiscloseLab",
+      title: "Tracked sources · disclosureLab",
       description:
         "Primary regulatory sources tracked by the corpus, with version counts and ingestion timestamps.",
       canonicalPath: "/sources.html",
@@ -85,7 +85,7 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
     },
     {
       path: "diffs.html",
-      title: "Change history · DiscloseLab",
+      title: "Change history · disclosureLab",
       description:
         "Meaning-aware diffs between consecutive versions of tracked regulatory sources, produced by semdiff.",
       canonicalPath: "/diffs.html",
@@ -94,7 +94,7 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
     },
     {
       path: "status-states.html",
-      title: "Regulation status states · DiscloseLab",
+      title: "Regulation status states · disclosureLab",
       description:
         "What the proposed, in-effect, enforced, and stayed status states mean, and why a law can be on the books while its enforcement is paused.",
       canonicalPath: "/status-states.html",
@@ -103,7 +103,7 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
     },
     {
       path: "methodology.html",
-      title: "Methodology · DiscloseLab",
+      title: "Methodology · disclosureLab",
       description:
         "How the corpus is built and grounded: primary-source citations, point-in-time history, authoritative-source ingestion, and the limits to hold it to.",
       canonicalPath: "/methodology.html",
