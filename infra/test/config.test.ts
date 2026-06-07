@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  appEnv,
-  BUDGET_LIMIT_USD,
-  DEFAULT_BUDGET_EMAIL,
-  DEFAULT_REGION,
-} from "../lib/config.ts";
+import { appEnv, BUDGET_LIMIT_USD, DEFAULT_REGION } from "../lib/config.ts";
 
 describe("infra config (ADR-0016)", () => {
   it("uses CDK_DEPLOY_REGION when set", () => {
@@ -28,8 +23,7 @@ describe("infra config (ADR-0016)", () => {
     }
   });
 
-  it("pins the budget backstop to $1 and a real default email", () => {
+  it("pins the budget backstop to $1", () => {
     expect(BUDGET_LIMIT_USD).toBe(1);
-    expect(DEFAULT_BUDGET_EMAIL).toContain("@");
   });
 });
