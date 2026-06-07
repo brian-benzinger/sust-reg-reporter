@@ -79,8 +79,8 @@ and no runtime dependencies.
 (95% line / 90% branch)**, enforced locally and in CI
 ([ADR-0019](adr/0019-vitest-testing-and-coverage.md)).
 
-**Infrastructure**: AWS CDK in [`infra/`](infra/), all four stacks **deployed
-live to us-west-2**:
+**Infrastructure**: AWS CDK in [`infra/`](infra/), all six stacks **deployed
+live** (us-west-2, except the CloudFront certificate, which must be us-east-1):
 
 - `CostStack`: the **$1 monthly budget** backstop (ADR-0016), with 80% / 100%
   email alerts.
@@ -92,12 +92,16 @@ live to us-west-2**:
   and 14-day log groups.
 - `ServingStack`: one **CloudFront** distribution fronting the static site and
   the thin API (`/api/*`) via an **API Gateway HTTP API** → Lambda (ADR-0013,
-  ADR-0023).
+  ADR-0023), served on the **custom domain** (apex + `www`) over HTTPS.
+- `DnsStack` + `CertUsEast1`: the Route 53 hosted zone and the ACM certificate
+  for **[disclosurelab.dev](https://disclosurelab.dev)** — registered at Vercel,
+  DNS delegated to Route 53, `www` 301s to the apex (ADR-0031, ADR-0032).
 - Cost-discipline **guardrail Aspects** fail `cdk synth` on a NAT Gateway, a
-  VPC, a REST API, an ALB, an unbounded log group, or a stray region.
+  VPC, a REST API, an ALB, an unbounded log group, or a stray region (bar the
+  one named us-east-1 certificate stack, ADR-0032).
 
 The change-detection path is wired and verified end to end:
-[`semdiff@0.1.1`](https://www.npmjs.com/package/semdiff) is integrated into the
+[`semdiff@0.1.2`](https://www.npmjs.com/package/semdiff) is integrated into the
 differ, with its Anthropic API key stored in an SSM `SecureString` (ADR-0024)
 and the differ kept strictly async, never publicly invokable (ADR-0007). The
 **change-history** page surfaces a real substantive diff — the EU Omnibus
@@ -253,18 +257,11 @@ core access patterns (point-in-time bitemporal lookup and conditional
 applicability) are relational by nature; applicability reads naturally as a SQL
 `WHERE` clause. ([ADR-0012](adr/0012-aurora-dsql-data-store.md))
 
-**Caveats to verify before relying on them:**
-
-- DSQL is PostgreSQL-*compatible*, not full Postgres, extension support is
-  limited (verify **pgvector** if semantic citation search is wanted).
-- The `tstzrange` + GiST exclusion-constraint approach for non-overlapping valid
-  periods may not be supported; if not, enforce in application code.
-- There are restrictions on certain `ALTER` operations on large tables.
-
-**Fallbacks:** Neon (full Postgres, free tier, HTTP driver) or DynamoDB
-(always-free, but fights the relational access patterns). On Lambda, always use
-a **stateless HTTP driver** rather than raw TCP pooling, or connection
-exhaustion will bite under burst.
+DSQL is PostgreSQL-*compatible*, not full Postgres; the limits we hit live are
+listed under [Open questions](#open-questions), and non-overlapping valid periods
+are kept in application code rather than a GiST exclusion constraint (ADR-0022).
+On Lambda, connect **per invocation** over the HTTP/TLS endpoint rather than
+pooling raw TCP, or connection exhaustion bites under burst (ADR-0012).
 
 ## Cost discipline
 
@@ -302,17 +299,15 @@ The full rationale lives in [`adr/`](adr/). Start with the
   (uuid + `gen_random_uuid()`), foreign keys are not enforced (integrity is kept
   in application code), and `GRANT USAGE ON SCHEMA public` is rejected. pgvector
   for semantic citation search is still unverified.
-- A custom domain (Route53 + an ACM cert in us-east-1 + CloudFront aliases) is
-  planned; registration is the only manual, billable step.
 
 ## Build order
 
 1. ✅ **`semdiff`**: the meaning-aware diff engine, published as
-   [`semdiff@0.1.1`](https://www.npmjs.com/package/semdiff) and integrated here.
+   [`semdiff@0.1.2`](https://www.npmjs.com/package/semdiff) and integrated here.
 2. ✅ **`core` domain logic**: status states, applicability engine, and the
    bitemporal resolver, with seed data and a per-file-gated test suite.
-3. ✅ **Infrastructure**: all four CDK stacks deployed (cost backstop, data
-   store + DSQL, snapshotting pipeline, serving layer).
+3. ✅ **Infrastructure**: all six CDK stacks deployed (cost backstop, data
+   store + DSQL, pipeline, serving, DNS, and the us-east-1 certificate).
 4. ✅ **Web app**: prerendered static site with a client-side Scope Checker and
    as-of slider.
 5. ✅ **Pipeline connective tissue**: source adapters, the ingestor's S3 write,
@@ -322,7 +317,10 @@ The full rationale lives in [`adr/`](adr/). Start with the
 7. ✅ **Obligation grounding**: append-only grounding facts (ADR-0028) link each
    obligation to its ingested snapshot; the API and web surface the grounded vs.
    ungrounded distinction.
-8. ⬜ **Next**: more source adapters (ADR-0008), span-level grounding
+8. ✅ **Custom domain**: [disclosurelab.dev](https://disclosurelab.dev) — Route 53
+   DNS (registered at Vercel, delegated to Route 53), a us-east-1 ACM cert, and
+   CloudFront aliases with a `www`→apex redirect (ADR-0031, ADR-0032).
+9. ⬜ **Next**: more source adapters (ADR-0008), span-level grounding
    (ADR-0028 §4), and ISSB once an IFRS licence is in place (ADR-0027).
 
 ## License
