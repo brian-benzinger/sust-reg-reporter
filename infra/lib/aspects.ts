@@ -55,21 +55,28 @@ export class LogRetentionAspect implements IAspect {
   }
 }
 
-/** Fail synth if any stack targets a region other than the single project region. */
+/**
+ * Fail synth if any stack targets a region other than the single project region
+ * (ADR-0016). A named stack may be exempted to **exactly us-east-1** — and
+ * nowhere else — because CloudFront viewer certificates must live there
+ * (ADR-0032); the guard still fails any other stray region for any stack.
+ */
 export class SingleRegionAspect implements IAspect {
   private readonly region: string;
+  private readonly exemptStackIds: Set<string>;
 
-  constructor(region: string) {
+  constructor(region: string, exemptStackIds: readonly string[] = []) {
     this.region = region;
+    this.exemptStackIds = new Set(exemptStackIds);
   }
 
   visit(node: IConstruct): void {
     if (!(node instanceof cdk.Stack)) return;
     const region = node.region;
-    if (!cdk.Token.isUnresolved(region) && region !== this.region) {
-      cdk.Annotations.of(node).addError(
-        `Stack ${node.stackName} targets ${region}, but the project is single-region ${this.region} (ADR-0016).`,
-      );
-    }
+    if (cdk.Token.isUnresolved(region) || region === this.region) return;
+    if (this.exemptStackIds.has(node.node.id) && region === "us-east-1") return;
+    cdk.Annotations.of(node).addError(
+      `Stack ${node.stackName} targets ${region}, but the project is single-region ${this.region} (ADR-0016).`,
+    );
   }
 }
