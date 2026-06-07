@@ -4,17 +4,34 @@ import * as cdk from "aws-cdk-lib";
 import {
   aws_apigatewayv2 as apigw,
   aws_apigatewayv2_integrations as apigwint,
+  aws_certificatemanager as acm,
   aws_cloudfront as cloudfront,
   aws_cloudfront_origins as origins,
   aws_iam as iam,
   aws_lambda as lambda,
   aws_logs as logs,
+  aws_route53 as route53,
+  aws_route53_targets as targets,
   aws_s3 as s3,
   aws_s3_deployment as s3deploy,
   aws_ssm as ssm,
 } from "aws-cdk-lib";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import type { Construct } from "constructs";
+
+export interface ServingStackProps extends cdk.StackProps {
+  /**
+   * When set, serve the site on a custom domain (apex + `www`) over HTTPS using
+   * the given us-east-1 certificate, and point Route 53 alias records at the
+   * distribution (ADR-0031, ADR-0032). Omitted in tests, where only the
+   * generated CloudFront URL is exercised.
+   */
+  readonly customDomain?: {
+    readonly domainName: string;
+    readonly certificate: acm.ICertificate;
+    readonly hostedZoneId: string;
+  };
+}
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const API_HANDLER = join(HERE, "..", "..", "api", "src", "handlers", "api.ts");
@@ -43,8 +60,10 @@ export class ServingStack extends cdk.Stack {
   readonly webBucket: s3.IBucket;
   readonly distributionDomainName: string;
 
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: ServingStackProps = {}) {
     super(scope, id, props);
+
+    const customDomain = props.customDomain;
 
     const webBucket = new s3.Bucket(this, "WebBucket", {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -113,14 +132,53 @@ export class ServingStack extends cdk.Stack {
     });
     const apiDomain = `${httpApi.apiId}.execute-api.${this.region}.amazonaws.com`;
 
+    // www -> apex 301 at the edge (only with a custom domain). A CloudFront
+    // Function on the viewer request is cheaper than an S3 redirect bucket and
+    // keeps the apex canonical (ADR-0031).
+    const wwwRedirect = customDomain
+      ? new cloudfront.Function(this, "WwwRedirect", {
+          comment: `Redirect www.${customDomain.domainName} -> apex`,
+          runtime: cloudfront.FunctionRuntime.JS_2_0,
+          code: cloudfront.FunctionCode.fromInline(
+            [
+              "function handler(event) {",
+              "  var request = event.request;",
+              "  var host = request.headers.host && request.headers.host.value;",
+              `  if (host === 'www.${customDomain.domainName}') {`,
+              "    return {",
+              "      statusCode: 301,",
+              "      statusDescription: 'Moved Permanently',",
+              `      headers: { location: { value: 'https://${customDomain.domainName}' + request.uri } },`,
+              "    };",
+              "  }",
+              "  return request;",
+              "}",
+            ].join("\n"),
+          ),
+        })
+      : undefined;
+
     const distribution = new cloudfront.Distribution(this, "Distribution", {
       comment: "sust-reg-reporter site + /api/* (ADR-0013, ADR-0023)",
       defaultRootObject: "index.html",
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
+      // The custom domain + its us-east-1 cert (ADR-0032); absent in tests.
+      domainNames: customDomain
+        ? [customDomain.domainName, `www.${customDomain.domainName}`]
+        : undefined,
+      certificate: customDomain?.certificate,
       defaultBehavior: {
         origin: origins.S3BucketOrigin.withOriginAccessControl(webBucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+        functionAssociations: wwwRedirect
+          ? [
+              {
+                function: wwwRedirect,
+                eventType: cloudfront.FunctionEventType.VIEWER_REQUEST,
+              },
+            ]
+          : undefined,
       },
       additionalBehaviors: {
         // The thin API: never cached, all methods, and no viewer Host header to
@@ -137,6 +195,38 @@ export class ServingStack extends cdk.Stack {
       },
     });
     this.distributionDomainName = distribution.distributionDomainName;
+
+    // Point the custom domain at the distribution. Apex must be an ALIAS (a
+    // CNAME is illegal at the zone apex); www gets the same alias and the
+    // function above 301s it to the apex (ADR-0031). The zone is referenced by
+    // id — it is owned and RETAINed by the DnsStack.
+    if (customDomain) {
+      const zone = route53.PublicHostedZone.fromHostedZoneAttributes(
+        this,
+        "Zone",
+        {
+          hostedZoneId: customDomain.hostedZoneId,
+          zoneName: customDomain.domainName,
+        },
+      );
+      const target = route53.RecordTarget.fromAlias(
+        new targets.CloudFrontTarget(distribution),
+      );
+      new route53.ARecord(this, "ApexAlias", { zone, target });
+      new route53.AaaaRecord(this, "ApexAliasAaaa", { zone, target });
+      const wwwName = `www.${customDomain.domainName}`;
+      new route53.ARecord(this, "WwwAlias", { zone, recordName: wwwName, target });
+      new route53.AaaaRecord(this, "WwwAliasAaaa", {
+        zone,
+        recordName: wwwName,
+        target,
+      });
+
+      new cdk.CfnOutput(this, "SiteUrl", {
+        value: `https://${customDomain.domainName}`,
+        description: "Custom-domain URL for the site (ADR-0031).",
+      });
+    }
 
     // Publish the prerendered site to the bucket and invalidate CloudFront as
     // part of `cdk deploy` (ADR-0026). `prune` removes objects no longer in the
