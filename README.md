@@ -83,7 +83,8 @@ and no runtime dependencies.
 live to us-west-2**:
 
 - `CostStack`: the **$1 monthly budget** backstop (ADR-0016), with 80% / 100%
-  email alerts.
+  email alerts (the alert address is supplied at deploy via the
+  `SUSTREG_BUDGET_EMAIL` env var, never hardcoded).
 - `DataStack`: the **content-addressed S3 snapshot store** (ADR-0011:
   versioned, object-locked, private, retained) and the **Aurora DSQL** cluster
   (ADR-0012), ACTIVE and deletion-protected.

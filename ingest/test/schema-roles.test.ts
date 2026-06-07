@@ -20,7 +20,7 @@ function fakeClient(opts: { roleExists?: boolean; mappingExists?: boolean }) {
   return { client, sql };
 }
 
-const ARN = "arn:aws:iam::181703226263:role/SustReg-Serving-ApiFnRole-ABC123";
+const ARN = "arn:aws:iam::111111111111:role/SustReg-Serving-ApiFnRole-ABC123";
 
 describe("ensureReaderRole (ADR-0012) — least-privilege provisioning", () => {
   it("creates the role, maps the IAM ARN, and grants SELECT on each table", async () => {

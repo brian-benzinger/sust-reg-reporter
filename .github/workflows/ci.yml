@@ -27,5 +27,8 @@ jobs:
       # the synth-time cost-discipline aspects (no costly networking, 14-day log
       # retention, single region — ADR-0016) are exercised on every PR, not just
       # the per-stack unit tests. Offline: the stacks are environment-agnostic,
-      # so no AWS credentials are needed.
+      # so no AWS credentials are needed. The budget email is supplied at deploy
+      # time (never hardcoded); a throwaway value satisfies the synth-only check.
       - run: npm run synth --workspace @sust-reg/infra -- --quiet
+        env:
+          SUSTREG_BUDGET_EMAIL: ci@example.org

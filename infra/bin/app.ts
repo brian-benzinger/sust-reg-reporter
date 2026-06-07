@@ -13,7 +13,6 @@ import {
 import {
   appEnv,
   CUSTOM_DOMAIN,
-  DEFAULT_BUDGET_EMAIL,
   DEFAULT_REGION,
   HOSTED_ZONE_ID,
 } from "../lib/config.ts";
@@ -24,9 +23,13 @@ const CERT_STACK_ID = "SustReg-CertUsEast1";
 const app = new cdk.App();
 const env = appEnv();
 
+// The budget-alert email is supplied at deploy time — `SUSTREG_BUDGET_EMAIL` or
+// `-c budgetEmail=...` — never hardcoded, so no personal address lives in the
+// repo. CostStack rejects a missing or placeholder address (ADR-0016).
 const budgetEmail =
+  process.env.SUSTREG_BUDGET_EMAIL ??
   (app.node.tryGetContext("budgetEmail") as string | undefined) ??
-  DEFAULT_BUDGET_EMAIL;
+  "";
 
 // Deployed FIRST and standalone so the cost guardrail exists before — and
 // outlives — any billable resource (ADR-0016).
