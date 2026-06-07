@@ -1,4 +1,5 @@
 import * as cdk from "aws-cdk-lib";
+import { CertStack } from "../lib/cert-stack.ts";
 import { CostStack } from "../lib/cost-stack.ts";
 import { DataStack } from "../lib/data-stack.ts";
 import { DnsStack } from "../lib/dns-stack.ts";
@@ -14,7 +15,11 @@ import {
   CUSTOM_DOMAIN,
   DEFAULT_BUDGET_EMAIL,
   DEFAULT_REGION,
+  HOSTED_ZONE_ID,
 } from "../lib/config.ts";
+
+/** The lone stack allowed outside the project region — a us-east-1 CloudFront cert (ADR-0032). */
+const CERT_STACK_ID = "SustReg-CertUsEast1";
 
 const app = new cdk.App();
 const env = appEnv();
@@ -66,10 +71,24 @@ new DnsStack(app, "SustReg-Dns", {
     "sust-reg-reporter authoritative DNS: Route 53 public hosted zone for the custom domain, registered at Vercel and delegated here (ADR-0031).",
 });
 
+// CloudFront viewer certificate (ADR-0032). Pinned to us-east-1 (CloudFront's
+// only accepted cert region) — the lone, narrowly-allowed exception to the
+// single-region guard below. DNS-validated against the zone above; consumed
+// cross-region by the serving stack (follow-up).
+new CertStack(app, CERT_STACK_ID, {
+  env: { account: env.account, region: "us-east-1" },
+  domainName: CUSTOM_DOMAIN,
+  hostedZoneId: HOSTED_ZONE_ID,
+  description:
+    "sust-reg-reporter CloudFront viewer certificate (us-east-1) for the custom domain, DNS-validated via Route 53 (ADR-0032).",
+});
+
 // Cost-discipline guardrails, enforced at synth time (ADR-0016, ADR-0014).
 cdk.Aspects.of(app).add(new NoCostlyNetworkingAspect());
 cdk.Aspects.of(app).add(new LogRetentionAspect(14));
-cdk.Aspects.of(app).add(new SingleRegionAspect(DEFAULT_REGION));
+cdk.Aspects.of(app).add(
+  new SingleRegionAspect(DEFAULT_REGION, [CERT_STACK_ID]),
+);
 
 cdk.Tags.of(app).add("project", "sust-reg-reporter");
 

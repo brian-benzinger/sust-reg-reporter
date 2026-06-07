@@ -28,6 +28,14 @@ export const DEFAULT_REGION = "us-west-2";
  */
 export const CUSTOM_DOMAIN = "disclosurelab.dev";
 
+/**
+ * Id of the Route 53 hosted zone for {@link CUSTOM_DOMAIN} (ADR-0031). The zone
+ * is owned by the DnsStack and RETAINed, so this id is stable; sibling stacks
+ * (the us-east-1 cert, the serving aliases) reference the zone by this id rather
+ * than re-creating it.
+ */
+export const HOSTED_ZONE_ID = "Z04337622AYQHB3N86RR9";
+
 /** Resolve the single CDK deployment environment (account + region). */
 export function appEnv(): Environment {
   const region = process.env.CDK_DEPLOY_REGION || DEFAULT_REGION;

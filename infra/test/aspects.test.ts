@@ -96,6 +96,39 @@ describe("SingleRegionAspect (ADR-0016)", () => {
     cdk.Aspects.of(stack).add(new SingleRegionAspect("us-west-2"));
     Annotations.fromStack(stack).hasNoError("*", Match.anyValue());
   });
+
+  it("allows an exempted stack in us-east-1 (the CloudFront cert, ADR-0032)", () => {
+    const app = new cdk.App();
+    const stack = new cdk.Stack(app, "Cert", {
+      env: { region: "us-east-1", account: "111111111111" },
+    });
+    cdk.Aspects.of(stack).add(new SingleRegionAspect("us-west-2", ["Cert"]));
+    Annotations.fromStack(stack).hasNoError("*", Match.anyValue());
+  });
+
+  it("still flags an unexempted stack in us-east-1", () => {
+    const app = new cdk.App();
+    const stack = new cdk.Stack(app, "S", {
+      env: { region: "us-east-1", account: "111111111111" },
+    });
+    cdk.Aspects.of(stack).add(new SingleRegionAspect("us-west-2", ["Cert"]));
+    Annotations.fromStack(stack).hasError(
+      "*",
+      Match.stringLikeRegexp("single-region us-west-2"),
+    );
+  });
+
+  it("exempts only us-east-1 — an exempted stack elsewhere is still flagged", () => {
+    const app = new cdk.App();
+    const stack = new cdk.Stack(app, "Cert", {
+      env: { region: "eu-west-1", account: "111111111111" },
+    });
+    cdk.Aspects.of(stack).add(new SingleRegionAspect("us-west-2", ["Cert"]));
+    Annotations.fromStack(stack).hasError(
+      "*",
+      Match.stringLikeRegexp("single-region us-west-2"),
+    );
+  });
 });
 
 describe("NoCostlyNetworkingAspect — API Gateway (ADR-0023)", () => {
