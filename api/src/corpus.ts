@@ -1,5 +1,6 @@
 import { type Route, routeFor, diffIdFrom } from "./routes.ts";
 import type { CorpusReader } from "./model.ts";
+import { searchCorpus } from "./search.ts";
 import {
   evaluateApplicability,
   type CompanyProfile,
@@ -66,6 +67,16 @@ export async function serveRoute(
           : { status: 404, body: meta(route, { message: `No diff "${id}".` }) };
       }
       return ok(route, { diffs: await reader.listDiffs(req.query.source) });
+    }
+    case "search": {
+      // Ranked substring search over the corpus metadata (ADR-0013): obligations
+      // from `core` (the same seed set `/scope-check` evaluates) plus the tracked
+      // sources from the reader. A blank `q` yields empty results, not a dump.
+      const results = searchCorpus(req.query.q ?? "", {
+        obligations: ALL_OBLIGATIONS,
+        sources: await reader.listSources(),
+      });
+      return ok(route, { ...results });
     }
     case "scope-check": {
       const rawRevenue = req.query.revenue ?? "0";
