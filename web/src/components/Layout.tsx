@@ -74,6 +74,7 @@ export function Layout(props: LayoutProps): React.ReactElement {
             <nav id={NAV_ID} aria-label="Primary">
               <a href="/index.html">Home</a>
               <a href="/regimes/index.html">Regimes</a>
+              <a href="/search.html">Search</a>
               <a href="/scope-checker.html">Scope checker</a>
               <a href="/as-of.html">As-of date</a>
               <a href="/diffs.html">Change history</a>

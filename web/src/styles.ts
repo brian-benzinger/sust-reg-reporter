@@ -692,6 +692,63 @@ form.scope select:focus {
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
+/* ---- Corpus search -------------------------------------------------- */
+form.search { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; }
+form.search input[type="search"] {
+  flex: 1 1 16rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  background: var(--bg);
+  color: var(--fg);
+}
+form.search input[type="search"]:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+form.search button {
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.search-examples { color: var(--muted); font-size: 0.9rem; margin: 0.75rem 0 0.25rem; }
+.search-examples .chip {
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--bg-elev);
+  color: var(--fg);
+  padding: 0.1rem 0.65rem;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.search-examples .chip:hover { border-color: var(--accent); color: var(--accent); }
+.search-status { min-height: 1.45rem; margin: 0.5rem 0 0.25rem; }
+.search-results section { margin: 1.25rem 0; }
+.search-results h2 { font-size: 1.05rem; margin: 0 0 0.5rem; }
+ul.search-list { list-style: none; margin: 0; padding: 0; }
+ul.search-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.6rem 0.85rem;
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--bg-elev);
+  margin: 0.4rem 0;
+}
+ul.search-list li a { font-weight: 600; }
+ul.search-list .meta, ul.search-list .cite { color: var(--muted); font-size: 0.85rem; }
+.search-empty { color: var(--muted); margin: 1.25rem 0; max-width: 46rem; }
+
 /* ---- Result cards (scope checker) ----------------------------------- */
 .result {
   border: 1px solid var(--border);

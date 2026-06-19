@@ -7,6 +7,7 @@ import {
   fetchDiffs,
   fetchDiff,
   fetchGrounding,
+  fetchSearch,
 } from "../src/api.ts";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -168,5 +169,21 @@ describe("fetchDiff", () => {
   it("throws on a non-ok response", async () => {
     mockFetch({}, 404);
     await expect(fetchDiff("x")).rejects.toThrow("HTTP 404");
+  });
+});
+
+describe("fetchSearch", () => {
+  it("calls /api/search with the q param", async () => {
+    mockFetch({ query: "ghg", obligations: [], sources: [], total: 0 });
+    const result = await fetchSearch("ghg");
+    expect(result.total).toBe(0);
+    const url = fetchedUrl();
+    expect(url).toContain("/api/search");
+    expect(url).toContain("q=ghg");
+  });
+
+  it("throws on a non-ok response", async () => {
+    mockFetch({}, 500);
+    await expect(fetchSearch("x")).rejects.toThrow("HTTP 500");
   });
 });

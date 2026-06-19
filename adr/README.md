@@ -63,3 +63,4 @@ product itself is built on.
 | [0031](0031-custom-domain-vercel-registrar-route53-dns.md) | Custom domain: Vercel registrar, Route 53 authoritative DNS | Accepted |
 | [0032](0032-cloudfront-cert-us-east-1.md) | CloudFront viewer certificate pinned to us-east-1 | Accepted (amends 0031) |
 | [0033](0033-pipeline-observability-alarms-dashboard.md) | Pipeline observability: health alarms, alerts, and a dashboard | Accepted |
+| [0034](0034-corpus-keyword-search.md) | Corpus keyword search: ranked metadata matching, not full-text | Accepted |

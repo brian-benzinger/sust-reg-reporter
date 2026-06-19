@@ -9,6 +9,7 @@ describe("buildPages (ADR-0013)", () => {
   it("emits home, regimes index, the interactive pages, and a page per obligation", () => {
     expect(byPath.has("index.html")).toBe(true);
     expect(byPath.has("regimes/index.html")).toBe(true);
+    expect(byPath.has("search.html")).toBe(true);
     expect(byPath.has("scope-checker.html")).toBe(true);
     expect(byPath.has("as-of.html")).toBe(true);
     expect(byPath.has("sources.html")).toBe(true);
@@ -18,10 +19,11 @@ describe("buildPages (ADR-0013)", () => {
     for (const o of ALL_OBLIGATIONS) {
       expect(byPath.has(`regimes/${o.id}.html`)).toBe(true);
     }
-    expect(pages).toHaveLength(8 + ALL_OBLIGATIONS.length);
+    expect(pages).toHaveLength(9 + ALL_OBLIGATIONS.length);
   });
 
   it("flags the interactive pages as needing the hydration bundle", () => {
+    expect(byPath.get("search.html")?.withClient).toBe(true);
     expect(byPath.get("scope-checker.html")?.withClient).toBe(true);
     expect(byPath.get("as-of.html")?.withClient).toBe(true);
     expect(byPath.get("sources.html")?.withClient).toBe(true);

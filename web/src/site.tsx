@@ -14,6 +14,7 @@ import { ObligationPage } from "./components/ObligationPage.tsx";
 import { RegimesIndex } from "./components/RegimesIndex.tsx";
 import { REGIMES_ROOT_ID } from "./components/RegimesIsland.tsx";
 import { ScopeCheckerPage } from "./components/ScopeCheckerPage.tsx";
+import { SearchPage } from "./components/SearchPage.tsx";
 import { SourcesPage } from "./components/SourcesPage.tsx";
 import { StatusStatesPage } from "./components/StatusStatesPage.tsx";
 
@@ -55,6 +56,15 @@ export function buildPages(obligations: readonly Obligation[]): PageSpec[] {
           <RegimesIndex groups={groups} />
         </div>
       ),
+    },
+    {
+      path: "search.html",
+      title: "Search · disclosureLab",
+      description:
+        "Keyword search over the disclosure obligations and tracked sources in the v1 corpus.",
+      canonicalPath: "/search.html",
+      withClient: true,
+      node: <SearchPage />,
     },
     {
       path: "scope-checker.html",
