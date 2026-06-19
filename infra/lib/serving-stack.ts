@@ -31,6 +31,12 @@ export interface ServingStackProps extends cdk.StackProps {
     readonly certificate: acm.ICertificate;
     readonly hostedZoneId: string;
   };
+  /**
+   * Override the path to the prerendered web dist directory. Defaults to
+   * `web/dist` relative to the repo root. Pass an existing directory in tests
+   * to avoid the asset-existence check that fires before `web` is built.
+   */
+  readonly webDistPath?: string;
 }
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -64,6 +70,7 @@ export class ServingStack extends cdk.Stack {
     super(scope, id, props);
 
     const customDomain = props.customDomain;
+    const webDistPath = props.webDistPath ?? WEB_DIST;
 
     const webBucket = new s3.Bucket(this, "WebBucket", {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -233,7 +240,7 @@ export class ServingStack extends cdk.Stack {
     // build (like `aws s3 sync --delete`); the helper Lambda gets an explicit
     // 14-day log group so it does not bill silently (ADR-0016).
     new s3deploy.BucketDeployment(this, "DeployWebSite", {
-      sources: [s3deploy.Source.asset(WEB_DIST)],
+      sources: [s3deploy.Source.asset(webDistPath)],
       destinationBucket: webBucket,
       distribution,
       distributionPaths: ["/*"],

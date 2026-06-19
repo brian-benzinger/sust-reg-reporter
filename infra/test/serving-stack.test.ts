@@ -1,12 +1,19 @@
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, it, expect } from "vitest";
 import * as cdk from "aws-cdk-lib";
 import { aws_certificatemanager as acm } from "aws-cdk-lib";
 import { Match, Template } from "aws-cdk-lib/assertions";
 import { ServingStack } from "../lib/serving-stack.ts";
 
+// web/dist is only present after `npm run build -w web`; tests don't need real
+// site assets — any existing directory satisfies CDK's asset-existence check.
+const TEST_DIR = dirname(fileURLToPath(import.meta.url));
+
 const app = new cdk.App();
 const stack = new ServingStack(app, "TestServing", {
   env: { region: "us-west-2", account: "111111111111" },
+  webDistPath: TEST_DIR,
 });
 const t = Template.fromStack(stack);
 
@@ -102,6 +109,7 @@ describe("ServingStack with a custom domain (ADR-0031, ADR-0032)", () => {
   });
   const cdStack = new ServingStack(cdApp, "ServingCD", {
     env: { region: "us-west-2", account: "111111111111" },
+    webDistPath: TEST_DIR,
     customDomain: {
       domainName: "disclosurelab.dev",
       certificate: acm.Certificate.fromCertificateArn(certStack, "C", CERT_ARN),
