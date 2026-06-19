@@ -2,16 +2,30 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as cdk from "aws-cdk-lib";
 import {
+  aws_cloudwatch as cw,
+  aws_cloudwatch_actions as cwActions,
   aws_iam as iam,
   aws_lambda as lambda,
   aws_logs as logs,
   aws_s3 as s3,
   aws_scheduler as scheduler,
+  aws_sns as sns,
+  aws_sns_subscriptions as subscriptions,
   aws_sqs as sqs,
   aws_ssm as ssm,
 } from "aws-cdk-lib";
 import { NodejsFunction } from "aws-cdk-lib/aws-lambda-nodejs";
 import type { Construct } from "constructs";
+import { assertValidEmail } from "./email.ts";
+
+export interface PipelineStackProps extends cdk.StackProps {
+  /**
+   * Verified email that pipeline health alarms notify (ADR-0033). Defaults to
+   * the budget-alert inbox at the app level; required here so the stack never
+   * synthesizes an alarm topic that emails nobody.
+   */
+  readonly alertEmail: string;
+}
 
 const HANDLERS = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -33,7 +47,7 @@ const HANDLERS = join(
  * reached over their public TLS endpoints (ADR-0010, ADR-0016).
  */
 export class PipelineStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+  constructor(scope: Construct, id: string, props: PipelineStackProps) {
     super(scope, id, props);
 
     const snapshotBucketName = ssm.StringParameter.valueForStringParameter(
@@ -185,6 +199,130 @@ export class PipelineStack extends cdk.Stack {
       },
     });
 
+    // --- Observability: health alarms + alert fan-out + dashboard (ADR-0033) ---
+    // The daily poll is otherwise invisible: a silently disabled schedule, a
+    // source that starts 403ing, or a dead-lettered run would go unnoticed until
+    // someone happened to look. These alarms make the pipeline's health legible
+    // and route a human a message when it breaks. The $1 budget alarm (ADR-0016)
+    // stays a COST backstop — it says nothing about whether the pipeline ran.
+    // All Always-Free: <10 alarms, 1 SNS topic, 1 of the 3 free dashboards.
+    const alertEmail = assertValidEmail(props.alertEmail, "alertEmail");
+
+    const alerts = new sns.Topic(this, "PipelineAlerts", {
+      displayName: "sust-reg pipeline health alerts",
+    });
+    alerts.addSubscription(new subscriptions.EmailSubscription(alertEmail));
+    const notify = new cwActions.SnsAction(alerts);
+
+    // The cron fires daily, so a one-day window is the natural evaluation period.
+    const day = cdk.Duration.days(1);
+
+    // "Did the daily poll run at all?" — the direct, alarm-backed answer to "is
+    // the backend running daily". No invocation in the window => missing data =>
+    // BREACHING, so a disabled schedule or a broken trigger pages someone.
+    const notRunning = new cw.Alarm(this, "IngestorNotRunningAlarm", {
+      alarmDescription:
+        "Ingestor has not run in the last day — the daily poll is broken or the EventBridge schedule was disabled (ADR-0010).",
+      metric: ingestorFn.metricInvocations({ period: day, statistic: "Sum" }),
+      threshold: 1,
+      comparisonOperator: cw.ComparisonOperator.LESS_THAN_THRESHOLD,
+      evaluationPeriods: 1,
+      treatMissingData: cw.TreatMissingData.BREACHING,
+    });
+
+    const ingestorErrors = new cw.Alarm(this, "IngestorErrorsAlarm", {
+      alarmDescription:
+        "The scheduled ingestor invocation errored (ADR-0010).",
+      metric: ingestorFn.metricErrors({ period: day, statistic: "Sum" }),
+      threshold: 1,
+      comparisonOperator: cw.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      evaluationPeriods: 1,
+      treatMissingData: cw.TreatMissingData.NOT_BREACHING,
+    });
+
+    const differErrors = new cw.Alarm(this, "DifferErrorsAlarm", {
+      alarmDescription:
+        "The differ errored — a needed semdiff run may be missing; re-request it via the rediff op (ADR-0007).",
+      metric: differFn.metricErrors({ period: day, statistic: "Sum" }),
+      threshold: 1,
+      comparisonOperator: cw.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      evaluationPeriods: 1,
+      treatMissingData: cw.TreatMissingData.NOT_BREACHING,
+    });
+
+    // A message in the DLQ means a scheduled invoke exhausted its retries.
+    const dlqNotEmpty = new cw.Alarm(this, "IngestDlqAlarm", {
+      alarmDescription:
+        "A scheduled ingest was dead-lettered after exhausting its retries (ADR-0010).",
+      metric: dlq.metricApproximateNumberOfMessagesVisible({
+        period: cdk.Duration.minutes(5),
+        statistic: "Maximum",
+      }),
+      threshold: 1,
+      comparisonOperator: cw.ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD,
+      evaluationPeriods: 1,
+      treatMissingData: cw.TreatMissingData.NOT_BREACHING,
+    });
+
+    const healthAlarms = [
+      notRunning,
+      ingestorErrors,
+      differErrors,
+      dlqNotEmpty,
+    ];
+    for (const alarm of healthAlarms) {
+      alarm.addAlarmAction(notify);
+      alarm.addOkAction(notify); // also notify on recovery, so "resolved" is explicit
+    }
+
+    // One at-a-glance dashboard (CloudWatch's first 3 dashboards are free,
+    // ADR-0016); the default window matches the 14-day log retention.
+    const dashboard = new cw.Dashboard(this, "PipelineDashboard", {
+      dashboardName: "SustReg-Pipeline",
+      defaultInterval: cdk.Duration.days(14),
+    });
+    dashboard.addWidgets(
+      new cw.AlarmStatusWidget({
+        title: "Pipeline health",
+        width: 24,
+        alarms: healthAlarms,
+      }),
+    );
+    dashboard.addWidgets(
+      new cw.GraphWidget({
+        title: "Ingestor — invocations & errors (daily)",
+        width: 12,
+        left: [ingestorFn.metricInvocations({ period: day, statistic: "Sum" })],
+        right: [ingestorFn.metricErrors({ period: day, statistic: "Sum" })],
+      }),
+      new cw.GraphWidget({
+        title: "Ingestor — duration",
+        width: 12,
+        left: [
+          ingestorFn.metricDuration({ statistic: "p50" }),
+          ingestorFn.metricDuration({ statistic: "p99" }),
+        ],
+      }),
+    );
+    dashboard.addWidgets(
+      new cw.GraphWidget({
+        title: "Differ — invocations & errors (daily)",
+        width: 12,
+        left: [differFn.metricInvocations({ period: day, statistic: "Sum" })],
+        right: [differFn.metricErrors({ period: day, statistic: "Sum" })],
+      }),
+      new cw.GraphWidget({
+        title: "Ingest DLQ — visible messages",
+        width: 12,
+        left: [
+          dlq.metricApproximateNumberOfMessagesVisible({
+            period: cdk.Duration.minutes(5),
+            statistic: "Maximum",
+          }),
+        ],
+      }),
+    );
+
     new cdk.CfnOutput(this, "IngestorFunctionName", {
       value: ingestorFn.functionName,
       description: "Ingestor Lambda — the scheduled source poller (ADR-0010).",
@@ -192,6 +330,14 @@ export class PipelineStack extends cdk.Stack {
     new cdk.CfnOutput(this, "DifferFunctionName", {
       value: differFn.functionName,
       description: "Differ Lambda — runs semdiff on changed content (ADR-0007).",
+    });
+    new cdk.CfnOutput(this, "AlertTopicArn", {
+      value: alerts.topicArn,
+      description: "SNS topic that pipeline health alarms notify (ADR-0033).",
+    });
+    new cdk.CfnOutput(this, "DashboardName", {
+      value: dashboard.dashboardName,
+      description: "CloudWatch pipeline-health dashboard (ADR-0033).",
     });
   }
 }

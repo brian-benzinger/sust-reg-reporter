@@ -1,6 +1,7 @@
 import * as cdk from "aws-cdk-lib";
 import * as budgets from "aws-cdk-lib/aws-budgets";
 import type { Construct } from "constructs";
+import { assertValidEmail } from "./email.ts";
 
 export interface CostStackProps extends cdk.StackProps {
   /** Verified email for budget notifications (ADR-0016). */
@@ -10,25 +11,12 @@ export interface CostStackProps extends cdk.StackProps {
 }
 
 /**
- * Addresses that look like a copy-paste placeholder rather than a real inbox.
- * A budget alarm that emails nobody is worse than useless, so these are
- * rejected at synth time (risk: the alarm silently disabled by a bad address).
+ * Fail fast if the budget email is missing or obviously a placeholder, so the
+ * $1 alarm (ADR-0016) is never deployed emailing nobody. Thin wrapper over the
+ * shared {@link assertValidEmail} (also used by the pipeline alerts, ADR-0033).
  */
-const PLACEHOLDER_EMAILS = new Set(["you@example.com", "changeme@example.com"]);
-
-/** Fail fast if the budget email is missing or obviously a placeholder. */
 export function assertValidBudgetEmail(email: string): string {
-  const trimmed = email.trim();
-  if (
-    trimmed.length === 0 ||
-    PLACEHOLDER_EMAILS.has(trimmed) ||
-    !trimmed.includes("@")
-  ) {
-    throw new Error(
-      `CostStack: a real budgetEmail is required for the $1 budget alarm (ADR-0016); got ${JSON.stringify(email)}`,
-    );
-  }
-  return trimmed;
+  return assertValidEmail(email, "budgetEmail");
 }
 
 /**
