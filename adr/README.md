@@ -60,3 +60,6 @@ product itself is built on.
 | [0028](0028-ground-obligations-via-append-only-grounding-facts.md) | Ground obligations to ingested snapshots via append-only grounding facts | Accepted |
 | [0029](0029-dark-mode-theming.md) | Dark mode via CSS-variable themes and an inline pre-paint script | Accepted (amends 0021) |
 | [0030](0030-token-driven-design-system.md) | A token-driven design system, not an external UI framework | Accepted (amends 0021) |
+| [0031](0031-custom-domain-vercel-registrar-route53-dns.md) | Custom domain: Vercel registrar, Route 53 authoritative DNS | Accepted |
+| [0032](0032-cloudfront-cert-us-east-1.md) | CloudFront viewer certificate pinned to us-east-1 | Accepted (amends 0031) |
+| [0033](0033-pipeline-observability-alarms-dashboard.md) | Pipeline observability: health alarms, alerts, and a dashboard | Accepted |

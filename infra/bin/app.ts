@@ -31,6 +31,13 @@ const budgetEmail =
   (app.node.tryGetContext("budgetEmail") as string | undefined) ??
   "";
 
+// Where pipeline health alarms email (ADR-0033). Defaults to the budget inbox so
+// a single operator address covers both cost and health; override to split them.
+const alertEmail =
+  process.env.SUSTREG_ALERT_EMAIL ??
+  (app.node.tryGetContext("alertEmail") as string | undefined) ??
+  budgetEmail;
+
 // Deployed FIRST and standalone so the cost guardrail exists before — and
 // outlives — any billable resource (ADR-0016).
 new CostStack(app, "SustReg-Cost", {
@@ -52,6 +59,7 @@ new DataStack(app, "SustReg-Data", {
 // consumes the DataStack handles (bucket, DSQL) via SSM.
 new PipelineStack(app, "SustReg-Pipeline", {
   env,
+  alertEmail,
   description:
     "sust-reg-reporter ingest pipeline: EventBridge-scheduled ingestor + differ Lambdas (ADR-0010).",
 });

@@ -90,7 +90,10 @@ live** (us-west-2, except the CloudFront certificate, which must be us-east-1):
   (ADR-0012), ACTIVE and deletion-protected.
 - `PipelineStack`: the snapshotting pipeline (ADR-0010): an EventBridge daily
   cron → ingestor + **differ** Lambdas (the differ runs `semdiff`), an SQS DLQ,
-  and 14-day log groups.
+  and 14-day log groups. It is **monitored** (ADR-0033): CloudWatch alarms for a
+  stalled daily poll, ingestor/differ errors, and a non-empty DLQ fan out to an
+  **SNS email** topic, with a pipeline **dashboard** — health monitoring kept
+  distinct from the `$1` **cost** alarm above.
 - `ServingStack`: one **CloudFront** distribution fronting the static site and
   the thin API (`/api/*`) via an **API Gateway HTTP API** → Lambda (ADR-0013,
   ADR-0023), served on the **custom domain** (apex + `www`) over HTTPS.

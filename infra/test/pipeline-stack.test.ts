@@ -8,6 +8,7 @@ import { PipelineStack } from "../lib/pipeline-stack.ts";
 const app = new cdk.App();
 const stack = new PipelineStack(app, "TestPipeline", {
   env: { region: "us-west-2", account: "111111111111" },
+  alertEmail: "ops@example.org",
 });
 const t = Template.fromStack(stack);
 
@@ -67,5 +68,39 @@ describe("PipelineStack (ADR-0010)", () => {
     t.resourceCountIs("AWS::Lambda::Url", 0);
     t.resourceCountIs("AWS::ApiGatewayV2::Api", 0);
     t.resourceCountIs("AWS::ApiGateway::RestApi", 0);
+  });
+
+  it("fans pipeline-health alarms out to an email-subscribed SNS topic (ADR-0033)", () => {
+    t.resourceCountIs("AWS::SNS::Topic", 1);
+    t.hasResourceProperties("AWS::SNS::Subscription", {
+      Protocol: "email",
+      Endpoint: "ops@example.org",
+    });
+  });
+
+  it("alarms on a stalled poll, ingestor/differ errors, and a non-empty DLQ (ADR-0033)", () => {
+    t.resourceCountIs("AWS::CloudWatch::Alarm", 4);
+    // The "did it run at all?" guard treats a missing datapoint as a breach, so
+    // a disabled schedule (no invocations) alarms instead of looking healthy.
+    t.hasResourceProperties("AWS::CloudWatch::Alarm", {
+      MetricName: "Invocations",
+      Namespace: "AWS/Lambda",
+      ComparisonOperator: "LessThanThreshold",
+      Threshold: 1,
+      TreatMissingData: "breaching",
+    });
+    // Every alarm notifies the topic on both trip and recovery.
+    for (const alarm of Object.values(t.findResources("AWS::CloudWatch::Alarm"))) {
+      const props = alarm.Properties as {
+        AlarmActions?: unknown[];
+        OKActions?: unknown[];
+      };
+      expect(props.AlarmActions).toHaveLength(1);
+      expect(props.OKActions).toHaveLength(1);
+    }
+  });
+
+  it("publishes a single CloudWatch dashboard (Always-Free; ADR-0016, ADR-0033)", () => {
+    t.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
   });
 });
