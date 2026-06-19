@@ -796,10 +796,12 @@ ul.search-list .meta, ul.search-list .cite { color: var(--muted); font-size: 0.8
 .result .due { font-size: 0.9rem; color: var(--muted); margin-bottom: 0; }
 
 /* ---- As-of slider controls ------------------------------------------ */
+/* One column, so each slider spans the full panel width — long ISO date labels
+   need that room to sit under their ticks without overlapping. */
 .asof-controls {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: 1.25rem 1.75rem;
+  grid-template-columns: 1fr;
+  gap: 1.75rem;
   margin: 0.5rem 0 1.5rem;
   /* Don't let dragging a slider select the label/value text — a stray text
      selection turns the next drag into a native text-drag (the "no-drop"
@@ -814,18 +816,36 @@ ul.search-list .meta, ul.search-list .cite { color: var(--muted); font-size: 0.8
   margin-top: 0.6rem;
   accent-color: var(--accent);
 }
-/* The discrete stops the slider snaps to, made visible under each track: every
-   date a status changed, with the current one emphasized. */
+/* The discrete stops the slider snaps to, drawn under the track with a tick over
+   each date and absolutely positioned (inline left offset) so tick + label line
+   up with the matching thumb position. The current stop is emphasized. */
 .slider-scale {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.1rem 0.6rem;
-  margin: 0.25rem 0 0;
-  font-size: 0.7rem;
+  display: block;
+  position: relative;
+  height: 1.5rem;
+  margin: 0.4rem 0 0;
+  font-size: 0.62rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+.slider-scale > span {
+  position: absolute;
+  top: 0.45rem;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.slider-scale > span::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -0.45rem;
+  width: 1px;
+  height: 0.3rem;
+  background: var(--border-strong);
+  transform: translateX(-50%);
+}
 .slider-scale .is-active { color: var(--accent-strong); font-weight: 700; }
+.slider-scale .is-active::before { background: var(--accent); height: 0.5rem; top: -0.55rem; }
 /* One-line explanation of why the sliders snap rather than scroll day-by-day. */
 .asof-hint { grid-column: 1 / -1; margin: 0; font-size: 0.85rem; color: var(--muted); }
 

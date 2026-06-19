@@ -14,29 +14,26 @@ function pick(dates: readonly string[], index: number): string {
   return dates[clamped] as string;
 }
 
-/** Native tick marks on the range track — one per discrete stop. */
-function StopTicks(props: {
-  readonly id: string;
-  readonly count: number;
-}): React.ReactElement {
-  return (
-    <datalist id={props.id}>
-      {Array.from({ length: props.count }, (_, i) => (
-        <option key={i} value={i} />
-      ))}
-    </datalist>
-  );
-}
-
-/** The visible list of dates the slider snaps to, current one emphasized. */
+/**
+ * The dates the slider snaps to, drawn as a tick + label under the track and
+ * positioned to line up with each thumb stop. Each stop sits at its proportional
+ * offset along the track — inset by half a thumb (0.5rem) at each end so the tick
+ * tracks the thumb centre, not the raw track edge — with the current one
+ * emphasized. (Long ISO dates rely on the full-width sliders to not crowd.)
+ */
 function SliderScale(props: {
   readonly dates: readonly string[];
   readonly current: string;
 }): React.ReactElement {
+  const span = Math.max(props.dates.length - 1, 1);
   return (
     <span className="slider-scale" aria-hidden="true">
-      {props.dates.map((date) => (
-        <span key={date} className={date === props.current ? "is-active" : undefined}>
+      {props.dates.map((date, i) => (
+        <span
+          key={date}
+          className={date === props.current ? "is-active" : undefined}
+          style={{ left: `calc(0.5rem + ${i / span} * (100% - 1rem))` }}
+        >
           {date}
         </span>
       ))}
@@ -136,10 +133,8 @@ export function AsOfSlider(props: {
             min={0}
             max={validDates.length - 1}
             value={Math.min(validIdx, validDates.length - 1)}
-            list="asof-valid-stops"
             onChange={(e) => setValidIdx(Number(e.target.value))}
           />
-          <StopTicks id="asof-valid-stops" count={validDates.length} />
           <SliderScale dates={validDates} current={validOn} />
         </label>
         <label>
@@ -149,10 +144,8 @@ export function AsOfSlider(props: {
             min={0}
             max={knowledgeDates.length - 1}
             value={Math.min(knowledgeIdx, knowledgeDates.length - 1)}
-            list="asof-knowledge-stops"
             onChange={(e) => setKnowledgeIdx(Number(e.target.value))}
           />
-          <StopTicks id="asof-knowledge-stops" count={knowledgeDates.length} />
           <SliderScale dates={knowledgeDates} current={knownAsOf} />
         </label>
         <p className="asof-hint">
