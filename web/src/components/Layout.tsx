@@ -1,6 +1,12 @@
 import type { ReactNode } from "react";
 import { NOT_LEGAL_ADVICE, SITE_NAME } from "../content.ts";
-import { FAVICON_PATH, GitHubIcon, LeafIcon, LinkedInIcon } from "../icon.tsx";
+import {
+  FAVICON_PATH,
+  GitHubIcon,
+  LeafIcon,
+  LinkedInIcon,
+  SearchIcon,
+} from "../icon.tsx";
 import { NAV_ID, NAV_INIT_SCRIPT } from "../nav.ts";
 import { STYLESHEET_PATH } from "../styles.ts";
 import { THEME_INIT_SCRIPT } from "../theme.ts";
@@ -74,13 +80,23 @@ export function Layout(props: LayoutProps): React.ReactElement {
             <nav id={NAV_ID} aria-label="Primary">
               <a href="/index.html">Home</a>
               <a href="/regimes/index.html">Regimes</a>
-              <a href="/search.html">Search</a>
               <a href="/scope-checker.html">Scope checker</a>
               <a href="/as-of.html">As-of date</a>
               <a href="/diffs.html">Change history</a>
               <a href="/sources.html">Sources</a>
             </nav>
             <div className="header-controls">
+              {/* Search is a standalone icon action beside the theme toggle, not
+                  a nav tab — it's a mode of exploring the corpus, and stays
+                  visible on mobile rather than collapsing into the hamburger. */}
+              <a
+                className="header-search"
+                href="/search.html"
+                aria-label="Search"
+                title="Search"
+              >
+                <SearchIcon />
+              </a>
               <ThemeToggle />
               <NavToggle />
             </div>

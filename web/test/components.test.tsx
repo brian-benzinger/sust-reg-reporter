@@ -51,6 +51,10 @@ describe("Layout", () => {
     expect(html).toContain('name="description" content="D"');
     expect(html).toContain('rel="canonical" href="/x.html"');
     expect(html).toContain('src="/app.js"');
+    // Search is a header icon action (not a nav tab), beside the theme toggle.
+    expect(html).toContain('class="header-search"');
+    expect(html).toContain('href="/search.html"');
+    expect(html).toContain('aria-label="Search"');
     expect(html).toContain(NOT_LEGAL_ADVICE);
     expect(html).toContain("<p>body-here</p>");
     // Reference pages are reachable from the footer on every page.
