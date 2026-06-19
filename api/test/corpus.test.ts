@@ -197,6 +197,38 @@ describe("/grounding (ADR-0028)", () => {
   });
 });
 
+describe("/search (ADR-0013)", () => {
+  it("returns ranked obligation hits for a query, with the disclaimer", async () => {
+    const r = await serveRoute(reader(), req("/api/search", { q: "climate" }));
+    expect(r.status).toBe(200);
+    expect(r.body.route).toBe("search");
+    expect(String(r.body.disclaimer)).toContain("Not legal advice");
+    expect(Array.isArray(r.body.obligations)).toBe(true);
+    expect((r.body.obligations as unknown[]).length).toBeGreaterThan(0);
+    expect(typeof r.body.total).toBe("number");
+  });
+
+  it("matches tracked sources from the reader (by name/authority)", async () => {
+    // The fake reader's source is "EPA GHG endangerment rescission".
+    const r = await serveRoute(reader(), req("/api/search", { q: "endangerment" }));
+    const sources = r.body.sources as Array<{ key: string }>;
+    expect(sources.some((s) => s.key === "fedreg-2026-03157")).toBe(true);
+  });
+
+  it("returns empty results for a missing query", async () => {
+    const r = await serveRoute(reader(), req("/api/search"));
+    expect(r.status).toBe(200);
+    expect(r.body.obligations).toEqual([]);
+    expect(r.body.sources).toEqual([]);
+    expect(r.body.total).toBe(0);
+  });
+
+  it("returns no hits for a query that matches nothing", async () => {
+    const r = await serveRoute(reader(), req("/api/search", { q: "zzzxqqnomatch" }));
+    expect(r.body.total).toBe(0);
+  });
+});
+
 describe("/scope-check (ADR-0005)", () => {
   it("marks a large-revenue California company as applicable", async () => {
     const r = await serveRoute(

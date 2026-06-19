@@ -5,6 +5,7 @@ export type Route =
   | "scope-check"
   | "diff"
   | "grounding"
+  | "search"
   | "not-found";
 
 /**
@@ -22,6 +23,7 @@ export function routeFor(path: string): Route {
   if (p === "/scope-check") return "scope-check";
   if (p === "/diff" || p.startsWith("/diff/")) return "diff";
   if (p === "/grounding") return "grounding";
+  if (p === "/search") return "search";
   return "not-found";
 }
 
