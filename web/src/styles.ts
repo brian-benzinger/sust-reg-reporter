@@ -161,7 +161,7 @@ body {
    reduced-motion preference by scoping every transition behind it. */
 @media (prefers-reduced-motion: no-preference) {
   body, header.site, footer.site, .card, .feature-card, .stat, .theme-toggle,
-  .nav-toggle, .result, .btn, form.scope input, form.scope select,
+  .nav-toggle, .header-search, .result, .btn, form.scope input, form.scope select,
   table.data-table tbody tr {
     transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease),
       color 0.2s var(--ease), box-shadow 0.2s var(--ease), transform 0.2s var(--ease);
@@ -316,6 +316,25 @@ header.site .header-controls {
 }
 .theme-toggle:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
 .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Header search action — a round icon button beside the theme toggle, matching
+   its size and treatment. A plain link (no JS): it navigates to /search.html. */
+.header-search {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  color: var(--fg);
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  line-height: 0;
+  box-shadow: var(--shadow-sm);
+}
+.header-search:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+.header-search:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .theme-toggle .ti { display: none; }
 /* Default to the System glyph before the script sets the preference attribute,
    so no-JS visitors still see a sensible icon. */
@@ -795,6 +814,20 @@ ul.search-list .meta, ul.search-list .cite { color: var(--muted); font-size: 0.8
   margin-top: 0.6rem;
   accent-color: var(--accent);
 }
+/* The discrete stops the slider snaps to, made visible under each track: every
+   date a status changed, with the current one emphasized. */
+.slider-scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 0.6rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.slider-scale .is-active { color: var(--accent-strong); font-weight: 700; }
+/* One-line explanation of why the sliders snap rather than scroll day-by-day. */
+.asof-hint { grid-column: 1 / -1; margin: 0; font-size: 0.85rem; color: var(--muted); }
 
 /* ---- Data tables ----------------------------------------------------- */
 /* Wrapper so a wide table scrolls horizontally within the page on narrow

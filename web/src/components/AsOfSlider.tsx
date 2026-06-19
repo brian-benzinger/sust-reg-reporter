@@ -14,6 +14,36 @@ function pick(dates: readonly string[], index: number): string {
   return dates[clamped] as string;
 }
 
+/** Native tick marks on the range track — one per discrete stop. */
+function StopTicks(props: {
+  readonly id: string;
+  readonly count: number;
+}): React.ReactElement {
+  return (
+    <datalist id={props.id}>
+      {Array.from({ length: props.count }, (_, i) => (
+        <option key={i} value={i} />
+      ))}
+    </datalist>
+  );
+}
+
+/** The visible list of dates the slider snaps to, current one emphasized. */
+function SliderScale(props: {
+  readonly dates: readonly string[];
+  readonly current: string;
+}): React.ReactElement {
+  return (
+    <span className="slider-scale" aria-hidden="true">
+      {props.dates.map((date) => (
+        <span key={date} className={date === props.current ? "is-active" : undefined}>
+          {date}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function apiRowToTimelineRow(row: AsOfApiRow): TimelineRow {
   return {
     obligationId: row.obligationId,
@@ -106,8 +136,11 @@ export function AsOfSlider(props: {
             min={0}
             max={validDates.length - 1}
             value={Math.min(validIdx, validDates.length - 1)}
+            list="asof-valid-stops"
             onChange={(e) => setValidIdx(Number(e.target.value))}
           />
+          <StopTicks id="asof-valid-stops" count={validDates.length} />
+          <SliderScale dates={validDates} current={validOn} />
         </label>
         <label>
           As we knew it on: <strong>{knownAsOf}</strong>
@@ -116,9 +149,16 @@ export function AsOfSlider(props: {
             min={0}
             max={knowledgeDates.length - 1}
             value={Math.min(knowledgeIdx, knowledgeDates.length - 1)}
+            list="asof-knowledge-stops"
             onChange={(e) => setKnowledgeIdx(Number(e.target.value))}
           />
+          <StopTicks id="asof-knowledge-stops" count={knowledgeDates.length} />
+          <SliderScale dates={knowledgeDates} current={knownAsOf} />
         </label>
+        <p className="asof-hint">
+          Each slider snaps to a date where a status actually changed — drag to
+          step through them. Dates in between resolve to the stop just before.
+        </p>
       </div>
 
       {/* The indicator floats over the table rather than sitting above it, so
