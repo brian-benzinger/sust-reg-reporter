@@ -135,8 +135,11 @@ coverage gate; the webpack config and the client/prerender entry points are glue
 
 The pipeline, the persisted bitemporal corpus, the corpus-backed API, and
 obligation grounding are all live. The thin API serves `/api/sources`,
-`/api/diff`, `/api/scope-check`, `/api/as-of`, and `/api/grounding`, and the web
-app reads it directly (with a least-privilege, read-only DSQL role,
+`/api/diff`, `/api/scope-check`, `/api/as-of`, `/api/grounding`, and
+`/api/search` — a ranked keyword search over obligation and source metadata,
+surfaced as a dedicated **Search** page
+([ADR-0034](adr/0034-corpus-keyword-search.md)) — and the web app reads it
+directly (with a least-privilege, read-only DSQL role,
 [ADR-0025](adr/0025-least-privilege-database-roles.md), and CDK-managed site
 deployment, [ADR-0026](adr/0026-cdk-managed-web-deployment.md)). What's next:
 more source adapters ([ADR-0008](adr/0008-authoritative-source-ingestion.md))

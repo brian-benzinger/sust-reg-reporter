@@ -187,3 +187,40 @@ export async function fetchDiff(id: string): Promise<DiffDetail> {
   const r = await getJson<{ diff: DiffDetail }>(`/diff/${encodeURIComponent(id)}`);
   return r.diff;
 }
+
+// ---------------------------------------------------------------------------
+// /search
+// ---------------------------------------------------------------------------
+
+/** One matched obligation from a corpus search, with its rank score. */
+export interface SearchObligationHit {
+  readonly obligationId: string;
+  readonly regime: string;
+  readonly title: string;
+  readonly status: RegulationStatus;
+  readonly sourceLabel: string;
+  readonly sourceUrl?: string;
+  readonly firstReportingDeadline?: string;
+  readonly score: number;
+}
+
+/** One matched tracked source from a corpus search, with its rank score. */
+export interface SearchSourceHit {
+  readonly key: string;
+  readonly name: string;
+  readonly authority: string;
+  readonly url: string;
+  readonly score: number;
+}
+
+export interface SearchApiResult {
+  readonly query: string;
+  readonly obligations: readonly SearchObligationHit[];
+  readonly sources: readonly SearchSourceHit[];
+  readonly total: number;
+}
+
+/** Ranked keyword search over the corpus (obligations + tracked sources). */
+export async function fetchSearch(q: string): Promise<SearchApiResult> {
+  return getJson<SearchApiResult>("/search", { q });
+}

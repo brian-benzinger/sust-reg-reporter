@@ -29,6 +29,7 @@ import {
   ObligationGroundingBadge,
   OBLIGATION_GROUNDING_ROOT_ID,
 } from "./components/ObligationGroundingBadge.tsx";
+import { SearchIsland, SEARCH_ROOT_ID } from "./components/SearchPage.tsx";
 
 function hydrateIsland(id: string, element: ReactElement): void {
   const container = document.getElementById(id);
@@ -42,6 +43,7 @@ hydrateIsland(AS_OF_SLIDER_ROOT_ID, <AsOfSlider />);
 hydrateIsland(SOURCES_ROOT_ID, <SourcesIsland />);
 hydrateIsland(DIFFS_ROOT_ID, <DiffsIsland />);
 hydrateIsland(REGIMES_ROOT_ID, <RegimesIsland />);
+hydrateIsland(SEARCH_ROOT_ID, <SearchIsland />);
 
 // The obligation page badge mounts with the id read from its data attribute, so
 // the single island serves every per-obligation page.
