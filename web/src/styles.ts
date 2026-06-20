@@ -844,6 +844,13 @@ ul.search-list .meta, ul.search-list .cite { color: var(--muted); font-size: 0.8
   background: var(--border-strong);
   transform: translateX(-50%);
 }
+/* End labels: left-align the first and right-align the last so the text stays on
+   the track, while the tick (::before) stays on the thumb position by anchoring
+   to that same edge — so tick and label still line up. */
+.slider-scale > span.at-start { transform: translateX(0); }
+.slider-scale > span.at-start::before { left: 0; }
+.slider-scale > span.at-end { transform: translateX(-100%); }
+.slider-scale > span.at-end::before { left: 100%; }
 .slider-scale .is-active { color: var(--accent-strong); font-weight: 700; }
 .slider-scale .is-active::before { background: var(--accent); height: 0.5rem; top: -0.55rem; }
 /* One-line explanation of why the sliders snap rather than scroll day-by-day. */
