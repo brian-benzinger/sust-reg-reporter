@@ -185,10 +185,11 @@ async function runCorpusSeed(): Promise<{
   seeded: SeedResult[];
   grounded: GroundResult[];
 }> {
+  const bucket = requireEnv("SNAPSHOT_BUCKET");
   const recordedAt = today();
   return withDsql(async (client) => {
     await ensureSchema(client);
-    const deps = dsqlSeedDeps(client);
+    const deps = dsqlSeedDeps(client, bucket);
     const seeded = await seedCorpus(deps, ALL_OBLIGATIONS, ALL_STATUS_HISTORIES);
     const grounded = await groundCorpus(deps, ALL_OBLIGATIONS, recordedAt);
     return { ok: true, seeded, grounded };
@@ -224,7 +225,7 @@ async function runIngest(): Promise<{
     // a changed source re-grounds automatically as its new version lands
     // (ADR-0028 §5) — content-hash-gated, so it never re-bills an LLM call.
     const grounded = await groundCorpus(
-      dsqlSeedDeps(client),
+      dsqlSeedDeps(client, bucket),
       ALL_OBLIGATIONS,
       recordedAt,
     );

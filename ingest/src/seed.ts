@@ -16,6 +16,7 @@
  * Pure orchestration over injected I/O — unit-tested with fakes; the DSQL glue
  * lives in `io/obligations.ts`.
  */
+import { resolveSpan } from "@sust-reg/core";
 import type {
   GroundingConfidence,
   GroundingMethod,
@@ -78,9 +79,19 @@ export interface SeedDeps {
   appendStatusFact(row: StatusFactRow): Promise<void>;
   /** The latest snapshot recorded for a source, if any (ADR-0028). */
   latestSourceVersion(sourceKey: string): Promise<SourceVersionRef | undefined>;
-  /** Whether this obligation is already grounded to this exact snapshot. */
-  groundingExists(obligationId: string, contentHash: string): Promise<boolean>;
+  /**
+   * Whether this obligation already has a grounding of this `method` to this
+   * exact snapshot. Method-aware so a span grounding can be appended to a
+   * snapshot already grounded at document level — the upgrade path (ADR-0035).
+   */
+  groundingExists(
+    obligationId: string,
+    contentHash: string,
+    method: GroundingMethod,
+  ): Promise<boolean>;
   appendGrounding(row: GroundingRow): Promise<void>;
+  /** Fetch a snapshot's text by content hash, for span resolution (ADR-0035). */
+  readSnapshot(contentHash: string): Promise<string>;
 }
 
 /** Outcome of grounding one obligation. */
@@ -89,6 +100,10 @@ export interface GroundResult {
   readonly grounded: boolean;
   /** Why grounding did or didn't happen — useful for diagnostics. */
   readonly reason: "grounded" | "no-source" | "no-snapshot" | "already-grounded";
+  /** Which grounding granularity applied (span vs document), when determined. */
+  readonly method?: GroundingMethod;
+  /** Extraction confidence of a span grounding (ADR-0035), when grounded. */
+  readonly confidence?: GroundingConfidence;
 }
 
 export interface SeedResult {
@@ -168,11 +183,19 @@ export async function seedCorpus(
 
 /**
  * Ground one obligation to its source's latest snapshot, idempotently
- * (ADR-0028 §5). Appends a document-level grounding only when the obligation
- * declares a `sourceKey`, that source has an ingested snapshot, and that exact
- * snapshot is not already grounded — so re-runs and unchanged sources never
- * duplicate a grounding (the same "append only when absent" discipline as the
- * seed; ADR-0017). An obligation with no registered source stays ungrounded.
+ * (ADR-0028 §5, ADR-0035). Appends a grounding only when the obligation declares
+ * a `sourceKey`, that source has an ingested snapshot, and that exact snapshot
+ * is not already grounded at the chosen granularity — so re-runs and unchanged
+ * sources never duplicate a grounding (the same "append only when absent"
+ * discipline as the seed; ADR-0017). An obligation with no registered source
+ * stays ungrounded.
+ *
+ * When the obligation carries a `locator` that resolves against the snapshot
+ * text, a precise **span** grounding is appended (ADR-0035); otherwise — no
+ * locator, or it does not resolve — grounding stays **document**-level. The two
+ * are tracked separately, so an already-document-grounded snapshot is upgraded
+ * to span the first time its locator resolves (the backfill path), and the
+ * later span fact supersedes the document one on read.
  */
 export async function groundObligation(
   deps: SeedDeps,
@@ -187,22 +210,71 @@ export async function groundObligation(
   if (version === undefined) {
     return { obligationId: obligation.id, grounded: false, reason: "no-snapshot" };
   }
-  if (await deps.groundingExists(obligation.id, version.contentHash)) {
-    return { obligationId: obligation.id, grounded: false, reason: "already-grounded" };
-  }
-  await deps.appendGrounding({
+
+  const base = {
     obligationId: obligation.id,
     sourceKey,
     sourceVersionId: version.id,
     contentHash: version.contentHash,
+    retrievedAt: version.retrievedAt,
+    recordedAt,
+  };
+
+  // Prefer a span grounding when the obligation has a locator. Check for an
+  // existing span grounding first so an unchanged snapshot skips the S3 fetch.
+  const locator = obligation.locator;
+  if (locator !== undefined) {
+    if (await deps.groundingExists(obligation.id, version.contentHash, "span")) {
+      return {
+        obligationId: obligation.id,
+        grounded: false,
+        reason: "already-grounded",
+        method: "span",
+      };
+    }
+    const span = resolveSpan(locator, await deps.readSnapshot(version.contentHash));
+    if (span !== undefined) {
+      await deps.appendGrounding({
+        ...base,
+        spanStart: span.start,
+        spanEnd: span.end,
+        method: "span",
+        confidence: span.confidence,
+      });
+      return {
+        obligationId: obligation.id,
+        grounded: true,
+        reason: "grounded",
+        method: "span",
+        confidence: span.confidence,
+      };
+    }
+    // Locator did not resolve against this snapshot — fall back to document
+    // level rather than asserting an unverified span (ADR-0035).
+  }
+
+  if (await deps.groundingExists(obligation.id, version.contentHash, "document")) {
+    return {
+      obligationId: obligation.id,
+      grounded: false,
+      reason: "already-grounded",
+      method: "document",
+    };
+  }
+  await deps.appendGrounding({
+    ...base,
     spanStart: null,
     spanEnd: null,
-    retrievedAt: version.retrievedAt,
     method: "document",
     confidence: "high",
-    recordedAt,
   });
-  return { obligationId: obligation.id, grounded: true, reason: "grounded" };
+  return {
+    obligationId: obligation.id,
+    grounded: true,
+    reason: "grounded",
+    method: "document",
+    confidence: "high",
+  };
 }
 
 /**
