@@ -12,6 +12,7 @@
  * authoritative on its own.
  */
 import type { SourceCitation } from "./citation.ts";
+import type { TextQuoteLocator } from "./span.ts";
 import { isCurrentlyEnforced, isLaw, type RegulationStatus } from "./status.ts";
 
 /**
@@ -85,6 +86,13 @@ export interface Obligation {
    * no `sourceKey` has no authoritative source yet and stays ungrounded.
    */
   readonly sourceKey?: string;
+  /**
+   * A text-quote anchor locating this obligation's passage within its source
+   * snapshot (ADR-0035). When present and it resolves against the snapshot, the
+   * pipeline records a span-level grounding; otherwise grounding stays
+   * document-level. Absent ⇒ no span is attempted.
+   */
+  readonly locator?: TextQuoteLocator;
 }
 
 export interface ApplicabilityResult {
