@@ -175,5 +175,9 @@ describe("MethodologyPage", () => {
     expect(html).toContain("ungrounded seed data");
     expect(html).toContain('href="/as-of.html"');
     expect(html).toContain('href="/status-states.html"');
+    // The grounding glossary the obligation pages link to (ADR-0035).
+    expect(html).toContain('id="grounding"');
+    expect(html).toContain("Grounding and confidence");
+    expect(html).toContain("Source text");
   });
 });
