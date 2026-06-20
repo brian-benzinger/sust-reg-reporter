@@ -11,6 +11,7 @@
 import type {
   ApplicabilityResult,
   GroundingConfidence,
+  GroundingMethod,
   RegulationStatus,
 } from "@sust-reg/core";
 
@@ -95,13 +96,19 @@ export async function fetchAsOf(
 // /grounding
 // ---------------------------------------------------------------------------
 
-/** The current grounding for one grounded obligation (ADR-0028). */
+/** The current grounding for one grounded obligation (ADR-0028, ADR-0035). */
 export interface GroundingApiRow {
   readonly obligationId: string;
   readonly grounded: boolean;
   readonly confidence?: GroundingConfidence;
+  /** Grounding granularity — `span` pins an exact passage (ADR-0035). */
+  readonly method?: GroundingMethod;
   readonly snapshotHash?: string;
   readonly retrievedAt?: string;
+  /** Character offsets of the span within the snapshot (span groundings). */
+  readonly span?: { readonly start: number; readonly end: number };
+  /** The substantiating text sliced from the snapshot (span groundings). */
+  readonly quote?: string;
 }
 
 export interface GroundingApiResult {

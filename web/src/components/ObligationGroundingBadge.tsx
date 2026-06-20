@@ -34,6 +34,8 @@ export function ObligationGroundingBadge(props: {
     <GroundingDisplay
       grounded={live?.grounded ?? false}
       {...(live?.confidence !== undefined ? { confidence: live.confidence } : {})}
+      {...(live?.method !== undefined ? { method: live.method } : {})}
+      {...(live?.quote !== undefined ? { quote: live.quote } : {})}
     />
   );
 }

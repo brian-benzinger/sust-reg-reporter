@@ -106,6 +106,34 @@ describe("ObligationGroundingBadge (live grounding overlay, ADR-0028)", () => {
     expect(screen.getByText("medium")).toBeTruthy();
   });
 
+  it("shows the substantiating quote and span marker for a span grounding (ADR-0035)", async () => {
+    vi.mocked(fetchGrounding).mockResolvedValue({
+      groundings: [
+        {
+          obligationId: "ob-grounded",
+          grounded: true,
+          method: "span",
+          confidence: "high",
+          snapshotHash: "sha256:x",
+          retrievedAt: "2026-05-31",
+          span: { start: 9559, end: 9627 },
+          quote: "covered entity shall prepare a climate-related financial risk report",
+        },
+      ],
+    });
+
+    render(<ObligationGroundingBadge obligationId="ob-grounded" />);
+    await flush();
+
+    expect(screen.getByText("Grounded")).toBeTruthy();
+    expect(screen.getByText("exact passage")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "covered entity shall prepare a climate-related financial risk report",
+      ),
+    ).toBeTruthy();
+  });
+
   it("stays ungrounded for an obligation the corpus has not grounded", async () => {
     vi.mocked(fetchGrounding).mockResolvedValue({ groundings: [] });
 
