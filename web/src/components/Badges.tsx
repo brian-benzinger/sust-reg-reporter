@@ -1,8 +1,4 @@
-import type {
-  GroundingConfidence,
-  GroundingMethod,
-  RegulationStatus,
-} from "@sust-reg/core";
+import type { GroundingConfidence, RegulationStatus } from "@sust-reg/core";
 
 /** Status pill, styled per lifecycle state (ADR-0006). */
 export function StatusBadge(props: {
@@ -24,37 +20,47 @@ export function GroundedBadge(props: {
 }
 
 /**
- * The grounding pill plus, when grounded, a confidence chip (ADR-0028,
- * ADR-0017) — the same shape the as-of slider shows, so every surface presents
- * grounding identically. When the grounding is span-level (ADR-0035), it also
- * shows an "exact passage" marker and, where provided, the substantiating
- * `quote` sliced from the snapshot. Surfaces that omit `method`/`quote` (e.g.
- * the compact regimes table) keep the pill-only presentation unchanged.
+ * The grounding pill plus, when grounded, a confidence chip and a small "ⓘ"
+ * link to the methodology definitions (ADR-0028, ADR-0017) — the same shape
+ * every surface shows. When a span-level grounding provides the substantiating
+ * `quote` (ADR-0035), it is rendered, labelled, on its own line. Surfaces that
+ * omit `quote` (e.g. the compact regimes table) keep the pill-only line.
  */
 export function GroundingDisplay(props: {
   readonly grounded: boolean;
   readonly confidence?: GroundingConfidence;
-  readonly method?: GroundingMethod;
   readonly quote?: string;
 }): React.ReactElement {
-  const { grounded, confidence, method, quote } = props;
+  const { grounded, confidence, quote } = props;
   return (
-    <span className="grounding-cell">
-      <GroundedBadge grounded={grounded} />
-      {grounded && confidence !== undefined ? (
-        <span className={`confidence confidence-${confidence}`}>{confidence}</span>
-      ) : null}
-      {grounded && method === "span" ? (
-        <span
-          className="grounding-method"
-          title="Pinned to an exact passage in the source snapshot (ADR-0035)"
-        >
-          exact passage
+    <>
+      <span className="grounding-cell">
+        <GroundedBadge grounded={grounded} />
+        {grounded && confidence !== undefined ? (
+          <span
+            className={`confidence confidence-${confidence}`}
+            title="How confident we are in the grounding match"
+          >
+            {confidence}
+          </span>
+        ) : null}
+        {grounded ? (
+          <a
+            className="info-link"
+            href="/methodology.html#grounding"
+            title="What do grounded, confidence, and source text mean?"
+            aria-label="What grounding and confidence mean"
+          >
+            ⓘ
+          </a>
+        ) : null}
+      </span>
+      {grounded && quote !== undefined ? (
+        <span className="grounding-quote">
+          <span className="grounding-quote-label">Source text</span>
+          <q>{quote}</q>
         </span>
       ) : null}
-      {grounded && quote !== undefined ? (
-        <q className="grounding-quote">{quote}</q>
-      ) : null}
-    </span>
+    </>
   );
 }

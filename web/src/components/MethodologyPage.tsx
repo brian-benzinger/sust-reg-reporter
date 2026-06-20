@@ -38,6 +38,34 @@ export function MethodologyPage(): React.ReactElement {
         distinct.
       </p>
 
+      <h2 id="grounding">Grounding and confidence</h2>
+      <p>
+        Each obligation carries a small set of grounding labels. This is what
+        they mean:
+      </p>
+      <dl className="kv">
+        <dt>Grounded</dt>
+        <dd>
+          The claim is pinned to a real, stored source snapshot. An obligation
+          that is not yet pinned shows{" "}
+          <strong>ungrounded seed data</strong> and must not be relied on.
+        </dd>
+        <dt>Source text</dt>
+        <dd>
+          The exact passage, quoted from the snapshot, that substantiates the
+          obligation. When shown, the claim is grounded to that specific
+          character range (an <em>exact passage</em>), not just to the document
+          as a whole.
+        </dd>
+        <dt>Confidence</dt>
+        <dd>
+          How sure the match is. <strong>High</strong>: the passage was located
+          unambiguously. <strong>Medium</strong>: the passage text appears more
+          than once in the source, so the first occurrence was used.{" "}
+          <strong>Low</strong>: only an approximate location was found.
+        </dd>
+      </dl>
+
       <h2>Point-in-time history</h2>
       <p>
         Regulations change, and our knowledge of them is corrected over time.

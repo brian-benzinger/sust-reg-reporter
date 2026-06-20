@@ -593,6 +593,33 @@ p.lead { font-size: var(--fs-lead); color: var(--muted); margin-top: 0; max-widt
 .confidence-medium { color: var(--info); }
 .confidence-low { color: var(--paused); }
 
+/* Small "ⓘ" link to the grounding/confidence definitions (methodology). */
+.info-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  font-size: 0.8rem;
+  line-height: 1;
+  text-decoration: none;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+.info-link:hover { color: var(--accent); border-color: var(--accent); }
+
+/* Span-level grounding: the substantiating quote on its own line (ADR-0035). */
+.grounding-quote { display: block; margin-top: 0.5rem; font-size: 0.9rem; }
+.grounding-quote-label {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  margin-right: 0.45rem;
+}
+.grounding-quote q { color: var(--fg); font-style: italic; }
+
 /* ---- Lists / definition lists --------------------------------------- */
 ul.facts { margin: 0.5rem 0; padding-left: 1.25rem; }
 ul.facts li { margin: 0.25rem 0; }
