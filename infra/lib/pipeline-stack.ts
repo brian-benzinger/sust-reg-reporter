@@ -168,7 +168,9 @@ export class PipelineStack extends cdk.Stack {
         DIFFER_FUNCTION_NAME: differFn.functionName,
       },
     });
-    snapshotBucket.grantWrite(ingestorFn);
+    // Writes new snapshots on a content change, and reads them back to resolve
+    // span-level groundings against the stored text (ADR-0035).
+    snapshotBucket.grantReadWrite(ingestorFn);
     ingestorFn.addToRolePolicy(dsqlConnect);
     differFn.grantInvoke(ingestorFn);
 
