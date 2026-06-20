@@ -1,10 +1,12 @@
 import type pg from "pg";
+import type { GroundingMethod } from "@sust-reg/core";
 import type {
   GroundingRow,
   ObligationRow,
   SeedDeps,
   StatusFactRow,
 } from "../seed.ts";
+import { getSnapshot } from "./s3.ts";
 
 /**
  * DSQL-backed `SeedDeps` (ADR-0012). Glue — excluded from the coverage gate;
@@ -16,7 +18,7 @@ import type {
  * keep the exact string semantics the shared resolver compares on (ADR-0003) —
  * no timezone normalization at the boundary.
  */
-export function dsqlSeedDeps(client: pg.Client): SeedDeps {
+export function dsqlSeedDeps(client: pg.Client, bucket: string): SeedDeps {
   return {
     obligationExists: async (id: string) => {
       const r = await client.query("select 1 from obligations where id = $1", [id]);
@@ -77,14 +79,20 @@ export function dsqlSeedDeps(client: pg.Client): SeedDeps {
         : undefined;
     },
 
-    groundingExists: async (obligationId: string, contentHash: string) => {
+    groundingExists: async (
+      obligationId: string,
+      contentHash: string,
+      method: GroundingMethod,
+    ) => {
       const r = await client.query(
         `select 1 from obligation_groundings
-         where obligation_id = $1 and content_hash = $2`,
-        [obligationId, contentHash],
+         where obligation_id = $1 and content_hash = $2 and method = $3`,
+        [obligationId, contentHash, method],
       );
       return (r.rowCount ?? 0) > 0;
     },
+
+    readSnapshot: (contentHash: string) => getSnapshot(bucket, contentHash),
 
     appendGrounding: async (row: GroundingRow) => {
       await client.query(

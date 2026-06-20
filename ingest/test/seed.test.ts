@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import type { Obligation, ObligationStatusHistory } from "@sust-reg/core";
+import type {
+  GroundingMethod,
+  Obligation,
+  ObligationStatusHistory,
+} from "@sust-reg/core";
 import {
   groundCorpus,
   groundObligation,
@@ -54,20 +58,24 @@ function makeDeps(
     factsFor?: Record<string, number>;
     /** Latest snapshot per source key. */
     versions?: Record<string, SourceVersionRef>;
-    /** Already-grounded `[obligationId, contentHash]` pairs. */
-    groundedHashes?: ReadonlyArray<readonly [string, string]>;
+    /** Already-grounded `[obligationId, contentHash, method]` triples. */
+    groundedKeys?: ReadonlyArray<readonly [string, string, GroundingMethod]>;
+    /** Snapshot text per content hash, for span resolution. */
+    snapshots?: Record<string, string>;
   } = {},
 ) {
   const present = new Set(existing.obligations ?? []);
   const factCounts = existing.factsFor ?? {};
   const versions = existing.versions ?? {};
+  const snapshots = existing.snapshots ?? {};
   const grounded = new Set(
-    (existing.groundedHashes ?? []).map(([o, h]) => `${o}::${h}`),
+    (existing.groundedKeys ?? []).map(([o, h, m]) => `${o}::${h}::${m}`),
   );
   const calls = {
     insertedObligations: [] as ObligationRow[],
     appendedFacts: [] as StatusFactRow[],
     appendedGroundings: [] as GroundingRow[],
+    snapshotReads: [] as string[],
   };
   const deps: SeedDeps = {
     obligationExists: async (id) => present.has(id),
@@ -79,11 +87,17 @@ function makeDeps(
       calls.appendedFacts.push(row);
     },
     latestSourceVersion: async (sourceKey) => versions[sourceKey],
-    groundingExists: async (obligationId, contentHash) =>
-      grounded.has(`${obligationId}::${contentHash}`),
+    groundingExists: async (obligationId, contentHash, method) =>
+      grounded.has(`${obligationId}::${contentHash}::${method}`),
     appendGrounding: async (row) => {
       calls.appendedGroundings.push(row);
-      grounded.add(`${row.obligationId}::${row.contentHash}`);
+      grounded.add(`${row.obligationId}::${row.contentHash}::${row.method}`);
+    },
+    readSnapshot: async (contentHash) => {
+      calls.snapshotReads.push(contentHash);
+      const text = snapshots[contentHash];
+      if (text === undefined) throw new Error(`no fake snapshot for ${contentHash}`);
+      return text;
     },
   };
   return { deps, calls };
@@ -97,6 +111,17 @@ const V1: SourceVersionRef = {
   contentHash: "sha256:h1",
   retrievedAt: "2026-05-31",
 };
+
+/** A located obligation whose text-quote anchor appears in SNAPSHOT_H1. */
+const LOCATED: Obligation = {
+  ...GROUNDABLE,
+  locator: { quote: "Climate-Related Financial Risk Act" },
+};
+
+const SNAPSHOT_H1 =
+  "Senate Bill 261, the Climate-Related Financial Risk Act, requires a report.";
+const QUOTE = "Climate-Related Financial Risk Act";
+const QUOTE_START = SNAPSHOT_H1.indexOf(QUOTE);
 
 describe("toObligationRow / toStatusFactRows (ADR-0003)", () => {
   it("projects an obligation, JSON-encoding criteria and grounding the citation", () => {
@@ -172,7 +197,7 @@ describe("seedCorpus (ADR-0003, ADR-0017)", () => {
 });
 
 describe("groundObligation / groundCorpus (ADR-0028)", () => {
-  it("appends a document-level grounding to the source's latest snapshot", async () => {
+  it("appends a document-level grounding when the obligation has no locator", async () => {
     const { deps, calls } = makeDeps({ versions: { "ca-sb261-2023": V1 } });
     const r = await groundObligation(deps, GROUNDABLE, "2026-06-03");
 
@@ -180,7 +205,10 @@ describe("groundObligation / groundCorpus (ADR-0028)", () => {
       obligationId: GROUNDABLE.id,
       grounded: true,
       reason: "grounded",
+      method: "document",
+      confidence: "high",
     });
+    expect(calls.snapshotReads).toHaveLength(0); // no locator → no S3 fetch
     expect(calls.appendedGroundings).toHaveLength(1);
     expect(calls.appendedGroundings[0]).toEqual({
       obligationId: GROUNDABLE.id,
@@ -210,13 +238,18 @@ describe("groundObligation / groundCorpus (ADR-0028)", () => {
     expect(calls.appendedGroundings).toHaveLength(0);
   });
 
-  it("is idempotent: does not re-ground an already-grounded snapshot", async () => {
+  it("is idempotent: does not re-ground an already document-grounded snapshot", async () => {
     const { deps, calls } = makeDeps({
       versions: { "ca-sb261-2023": V1 },
-      groundedHashes: [[GROUNDABLE.id, "sha256:h1"]],
+      groundedKeys: [[GROUNDABLE.id, "sha256:h1", "document"]],
     });
     const r = await groundObligation(deps, GROUNDABLE, "2026-06-03");
-    expect(r.reason).toBe("already-grounded");
+    expect(r).toEqual({
+      obligationId: GROUNDABLE.id,
+      grounded: false,
+      reason: "already-grounded",
+      method: "document",
+    });
     expect(calls.appendedGroundings).toHaveLength(0);
   });
 
@@ -225,7 +258,7 @@ describe("groundObligation / groundCorpus (ADR-0028)", () => {
       versions: {
         "ca-sb261-2023": { id: "ver-2", contentHash: "sha256:h2", retrievedAt: "2026-06-02" },
       },
-      groundedHashes: [[GROUNDABLE.id, "sha256:h1"]],
+      groundedKeys: [[GROUNDABLE.id, "sha256:h1", "document"]],
     });
     const r = await groundObligation(deps, GROUNDABLE, "2026-06-03");
     expect(r.reason).toBe("grounded");
@@ -234,6 +267,92 @@ describe("groundObligation / groundCorpus (ADR-0028)", () => {
       contentHash: "sha256:h2",
       retrievedAt: "2026-06-02",
     });
+  });
+
+  it("grounds at span level when a locator resolves against the snapshot (ADR-0035)", async () => {
+    const { deps, calls } = makeDeps({
+      versions: { "ca-sb261-2023": V1 },
+      snapshots: { "sha256:h1": SNAPSHOT_H1 },
+    });
+    const r = await groundObligation(deps, LOCATED, "2026-06-03");
+
+    expect(r).toEqual({
+      obligationId: LOCATED.id,
+      grounded: true,
+      reason: "grounded",
+      method: "span",
+      confidence: "high",
+    });
+    expect(calls.appendedGroundings[0]).toMatchObject({
+      method: "span",
+      confidence: "high",
+      spanStart: QUOTE_START,
+      spanEnd: QUOTE_START + QUOTE.length,
+    });
+    // The offsets really delimit the anchored text in the snapshot.
+    expect(SNAPSHOT_H1.slice(QUOTE_START, QUOTE_START + QUOTE.length)).toBe(QUOTE);
+  });
+
+  it("falls back to document-level when the locator does not resolve", async () => {
+    const { deps, calls } = makeDeps({
+      versions: { "ca-sb261-2023": V1 },
+      snapshots: { "sha256:h1": "a snapshot that does not contain the anchor" },
+    });
+    const r = await groundObligation(deps, LOCATED, "2026-06-03");
+
+    expect(r).toMatchObject({ grounded: true, reason: "grounded", method: "document" });
+    expect(calls.snapshotReads).toEqual(["sha256:h1"]); // it did try to resolve
+    expect(calls.appendedGroundings[0]).toMatchObject({
+      method: "document",
+      spanStart: null,
+      spanEnd: null,
+    });
+  });
+
+  it("upgrades an already document-grounded snapshot to a span grounding (backfill)", async () => {
+    const { deps, calls } = makeDeps({
+      versions: { "ca-sb261-2023": V1 },
+      snapshots: { "sha256:h1": SNAPSHOT_H1 },
+      // A document grounding for this exact snapshot already exists...
+      groundedKeys: [[LOCATED.id, "sha256:h1", "document"]],
+    });
+    const r = await groundObligation(deps, LOCATED, "2026-06-03");
+
+    // ...so the locator's first resolution appends a *span* grounding alongside
+    // it, which supersedes the document fact on read (ADR-0035).
+    expect(r).toMatchObject({ grounded: true, reason: "grounded", method: "span" });
+    expect(calls.appendedGroundings).toHaveLength(1);
+    expect(calls.appendedGroundings[0]).toMatchObject({ method: "span" });
+  });
+
+  it("is idempotent on a span grounding and skips the snapshot fetch", async () => {
+    const { deps, calls } = makeDeps({
+      versions: { "ca-sb261-2023": V1 },
+      snapshots: { "sha256:h1": SNAPSHOT_H1 },
+      groundedKeys: [[LOCATED.id, "sha256:h1", "span"]],
+    });
+    const r = await groundObligation(deps, LOCATED, "2026-06-03");
+
+    expect(r).toEqual({
+      obligationId: LOCATED.id,
+      grounded: false,
+      reason: "already-grounded",
+      method: "span",
+    });
+    expect(calls.appendedGroundings).toHaveLength(0);
+    expect(calls.snapshotReads).toHaveLength(0); // already span-grounded → no fetch
+  });
+
+  it("carries the resolved confidence (medium) for an ambiguous anchor", async () => {
+    const { deps, calls } = makeDeps({
+      versions: { "ca-sb261-2023": V1 },
+      snapshots: { "sha256:h1": "the report. the report." },
+    });
+    const located: Obligation = { ...GROUNDABLE, locator: { quote: "the report" } };
+    const r = await groundObligation(deps, located, "2026-06-03");
+
+    expect(r).toMatchObject({ method: "span", confidence: "medium" });
+    expect(calls.appendedGroundings[0]).toMatchObject({ confidence: "medium", spanStart: 0 });
   });
 
   it("grounds a corpus, leaving sourceless obligations ungrounded", async () => {
