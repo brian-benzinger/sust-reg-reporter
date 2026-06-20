@@ -67,8 +67,12 @@ export const SB_261: Obligation = {
   // Both SB 261's and SB 253's bill texts are registered sources (ADR-0028); the
   // pipeline grounds each obligation to its latest ingested leginfo snapshot.
   sourceKey: "ca-sb261-2023",
-  // Illustrative text-quote anchor (ADR-0035): SB 261's short title.
-  locator: { quote: "Climate-Related Financial Risk Act" },
+  // Text-quote anchor (ADR-0035), verified against the live leginfo snapshot:
+  // the operative clause imposing the report obligation (unique → high). The
+  // bill's title is "climate-related financial risk", not "...Act".
+  locator: {
+    quote: "covered entity shall prepare a climate-related financial risk report",
+  },
 };
 
 /** All seeded California obligations. */

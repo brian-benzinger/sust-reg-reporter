@@ -39,11 +39,12 @@ export const CSRD_WAVE1: Obligation = {
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
   sourceKey: "eu-csrd-2022-2464",
-  // Illustrative text-quote anchor (ADR-0035). Both waves pin to the same
-  // directive snapshot, so each anchors a distinct passage: wave 1 on the
-  // large public-interest entities that report first. Validated at grounding
-  // time; falls back to document-level if it does not resolve.
-  locator: { quote: "large public-interest entities" },
+  // Text-quote anchor (ADR-0035), verified against the live EUR-Lex snapshot.
+  // Both waves pin to the same directive, so each anchors a distinct passage:
+  // wave 1 on the large public-interest-entity cohort that reports first (the
+  // directive's wording is "large undertakings which are public-interest
+  // entities", not "large public-interest entities").
+  locator: { quote: "large undertakings which are public-interest entities" },
 };
 
 export const CSRD_WAVE2: Obligation = {
