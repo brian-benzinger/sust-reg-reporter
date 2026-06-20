@@ -52,6 +52,18 @@ describe("AsOfSlider (interactive)", () => {
     expect(screen.getByText("Proposed")).toBeTruthy();
   });
 
+  it("anchors the first and last stop labels to their inner edge", () => {
+    const { container } = render(<AsOfSlider histories={histories} />);
+    // The valid-axis scale: first stop left-aligned, last stop right-aligned, so
+    // the end labels don't overflow the track (the tick stays on the thumb).
+    const scale = container.querySelector(".slider-scale");
+    expect(scale?.querySelector(".at-start")?.textContent).toBe("2023-01-01");
+    expect(scale?.querySelector(".at-end")?.textContent).toBe("2024-06-01");
+    // Interior stops carry neither edge class.
+    const interior = scale?.querySelector("span:not(.at-start):not(.at-end)");
+    expect(interior?.textContent).toBe("2023-03-01");
+  });
+
   it("shows a fallback when there is no timeline data", () => {
     render(<AsOfSlider histories={[]} />);
     expect(screen.getByText("No timeline data available.")).toBeTruthy();

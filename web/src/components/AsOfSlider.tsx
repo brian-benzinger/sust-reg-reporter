@@ -25,18 +25,29 @@ function SliderScale(props: {
   readonly dates: readonly string[];
   readonly current: string;
 }): React.ReactElement {
-  const span = Math.max(props.dates.length - 1, 1);
+  const last = props.dates.length - 1;
+  const span = Math.max(last, 1);
   return (
     <span className="slider-scale" aria-hidden="true">
-      {props.dates.map((date, i) => (
-        <span
-          key={date}
-          className={date === props.current ? "is-active" : undefined}
-          style={{ left: `calc(0.5rem + ${i / span} * (100% - 1rem))` }}
-        >
-          {date}
-        </span>
-      ))}
+      {props.dates.map((date, i) => {
+        // The end labels anchor to their tick by an inner edge instead of their
+        // centre, so they don't overflow the track on a narrow screen; the tick
+        // itself stays on the thumb position (handled in CSS via the class).
+        const edge = i === 0 ? "at-start" : i === last ? "at-end" : undefined;
+        const className =
+          [edge, date === props.current ? "is-active" : undefined]
+            .filter(Boolean)
+            .join(" ") || undefined;
+        return (
+          <span
+            key={date}
+            className={className}
+            style={{ left: `calc(0.5rem + ${i / span} * (100% - 1rem))` }}
+          >
+            {date}
+          </span>
+        );
+      })}
     </span>
   );
 }
