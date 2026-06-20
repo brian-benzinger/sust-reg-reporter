@@ -9,6 +9,7 @@ import type {
   TemporalFact,
 } from "@sust-reg/core";
 import { withDsql } from "./db.ts";
+import { getSnapshot } from "./s3.ts";
 import type {
   CorpusReader,
   DiffDetail,
@@ -16,13 +17,27 @@ import type {
   SourceSummary,
 } from "../model.ts";
 
+function requireEnv(name: string): string {
+  const v = process.env[name];
+  if (v === undefined || v === "") throw new Error(`${name} is not set`);
+  return v;
+}
+
 /**
  * The DSQL-backed `CorpusReader` (ADR-0012). Read-only and parameterized; each
  * method opens one connection (connect-per-invocation). Glue — excluded from the
  * coverage gate; the route logic that consumes it is tested against a fake.
  */
 export function dsqlCorpusReader(): CorpusReader {
-  return { listSources, listDiffs, getDiff, statusTimelines, groundingHistories };
+  return {
+    listSources,
+    listDiffs,
+    getDiff,
+    statusTimelines,
+    groundingHistories,
+    readSnapshot: (contentHash) =>
+      getSnapshot(requireEnv("SNAPSHOT_BUCKET"), contentHash),
+  };
 }
 
 /**

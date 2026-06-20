@@ -91,6 +91,17 @@ export class ServingStack extends cdk.Stack {
       this,
       "/sust-reg/dsql/cluster-arn",
     );
+    // The immutable snapshot store (ADR-0011), read to slice span-grounding
+    // quotes (ADR-0035). Soft-coupled via SSM like the DSQL handles.
+    const snapshotBucketName = ssm.StringParameter.valueForStringParameter(
+      this,
+      "/sust-reg/s3/snapshot-bucket",
+    );
+    const snapshotBucket = s3.Bucket.fromBucketName(
+      this,
+      "SnapshotBucket",
+      snapshotBucketName,
+    );
 
     // Thin API Lambda — reads the DSQL corpus (ADR-0012). No Function URL: only
     // API Gateway invokes it (ADR-0023). Bundle @aws-sdk/dsql-signer + pg (the
@@ -106,9 +117,17 @@ export class ServingStack extends cdk.Stack {
         retention: logs.RetentionDays.TWO_WEEKS,
         removalPolicy: cdk.RemovalPolicy.DESTROY,
       }),
-      environment: { DSQL_ENDPOINT: dsqlEndpoint, DSQL_DB_ROLE: "api_reader" },
+      environment: {
+        DSQL_ENDPOINT: dsqlEndpoint,
+        DSQL_DB_ROLE: "api_reader",
+        SNAPSHOT_BUCKET: snapshotBucketName,
+      },
       bundling: { minify: true, externalModules: ["pg-native"] },
     });
+    // Read-only on the immutable snapshot store, to slice span-grounding quotes
+    // (ADR-0035). The public read path stays SELECT-only on DSQL and read-only
+    // on S3 — no write capability anywhere.
+    snapshotBucket.grantRead(apiFn);
 
     // The API connects as the least-privilege, SELECT-only `api_reader` database
     // role (provisioned via the admin ingestor's dbGrants path and mapped to this

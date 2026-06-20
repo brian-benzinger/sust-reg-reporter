@@ -118,19 +118,45 @@ export async function serveRoute(
       // static Regimes/obligation pages can hydrate their seed citation badges
       // to live provenance, consistent with /as-of. Ungrounded obligations are
       // simply absent (the client treats a missing entry as ungrounded).
-      const groundings = (await reader.groundingHistories()).flatMap((g) => {
-        const current = latestGrounding(g.facts);
-        return current === undefined
-          ? []
-          : [
-              {
-                obligationId: g.obligationId,
-                grounded: true as const,
-                confidence: current.confidence,
-                snapshotHash: current.snapshotHash,
-                retrievedAt: current.retrievedAt,
-              },
-            ];
+      const current = (await reader.groundingHistories()).flatMap((g) => {
+        const fact = latestGrounding(g.facts);
+        return fact === undefined ? [] : [{ obligationId: g.obligationId, fact }];
+      });
+
+      // For span-level groundings, slice the substantiating quote from the
+      // snapshot (ADR-0035). Read each distinct snapshot once; a read failure
+      // degrades to no quote rather than failing the whole response.
+      const spanHashes = [
+        ...new Set(
+          current.filter((c) => c.fact.span !== undefined).map((c) => c.fact.snapshotHash),
+        ),
+      ];
+      const texts = new Map<string, string>();
+      for (const hash of spanHashes) {
+        try {
+          texts.set(hash, await reader.readSnapshot(hash));
+        } catch {
+          // Snapshot unreadable — serve the grounding without its quote.
+        }
+      }
+
+      const groundings = current.map(({ obligationId, fact }) => {
+        const base = {
+          obligationId,
+          grounded: true as const,
+          method: fact.method,
+          confidence: fact.confidence,
+          snapshotHash: fact.snapshotHash,
+          retrievedAt: fact.retrievedAt,
+        };
+        if (fact.span === undefined) return base;
+        const text = texts.get(fact.snapshotHash);
+        const quote = text?.slice(fact.span.start, fact.span.end);
+        return {
+          ...base,
+          span: fact.span,
+          ...(quote !== undefined ? { quote } : {}),
+        };
       });
       return ok(route, { groundings });
     }
