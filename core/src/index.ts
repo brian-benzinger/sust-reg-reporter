@@ -7,6 +7,7 @@ export * from "./citation.ts";
 export * from "./applicability.ts";
 export * from "./temporal.ts";
 export * from "./grounding.ts";
+export * from "./span.ts";
 export type { ObligationStatusHistory } from "./regimes/status-history.ts";
 export * as caRegime from "./regimes/ca-sb253-261.ts";
 export * as euRegime from "./regimes/eu-csrd.ts";

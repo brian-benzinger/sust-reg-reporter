@@ -40,6 +40,11 @@ export const SB_253: Obligation = {
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
   sourceKey: "ca-sb253-2023",
+  // Illustrative text-quote anchor (ADR-0035): the act's short title, a
+  // distinctive phrase in the bill text. Validated against the real leginfo
+  // snapshot at grounding time; if it does not resolve, grounding stays
+  // document-level.
+  locator: { quote: "Climate Corporate Data Accountability Act" },
 };
 
 export const SB_261: Obligation = {
@@ -62,6 +67,8 @@ export const SB_261: Obligation = {
   // Both SB 261's and SB 253's bill texts are registered sources (ADR-0028); the
   // pipeline grounds each obligation to its latest ingested leginfo snapshot.
   sourceKey: "ca-sb261-2023",
+  // Illustrative text-quote anchor (ADR-0035): SB 261's short title.
+  locator: { quote: "Climate-Related Financial Risk Act" },
 };
 
 /** All seeded California obligations. */

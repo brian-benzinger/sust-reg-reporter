@@ -39,6 +39,11 @@ export const CSRD_WAVE1: Obligation = {
     snapshotHash: UNGROUNDED_SNAPSHOT_HASH,
   },
   sourceKey: "eu-csrd-2022-2464",
+  // Illustrative text-quote anchor (ADR-0035). Both waves pin to the same
+  // directive snapshot, so each anchors a distinct passage: wave 1 on the
+  // large public-interest entities that report first. Validated at grounding
+  // time; falls back to document-level if it does not resolve.
+  locator: { quote: "large public-interest entities" },
 };
 
 export const CSRD_WAVE2: Obligation = {
@@ -60,6 +65,9 @@ export const CSRD_WAVE2: Obligation = {
   // Both waves are substantiated by the same CSRD directive snapshot (ADR-0028:
   // one source may ground several obligations).
   sourceKey: "eu-csrd-2022-2464",
+  // Illustrative text-quote anchor (ADR-0035): wave 2 anchors the later-phased
+  // other large undertakings, a distinct passage from wave 1.
+  locator: { quote: "other large undertakings" },
 };
 
 /** All seeded EU CSRD obligations. */
