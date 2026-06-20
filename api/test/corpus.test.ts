@@ -101,9 +101,36 @@ function reader(over: Partial<CorpusReader> = {}): CorpusReader {
     getDiff: async () => DETAIL,
     statusTimelines: async () => TIMELINES,
     groundingHistories: async () => GROUNDINGS,
+    readSnapshot: async () => "",
     ...over,
   };
 }
+
+// A snapshot whose text contains SB 261's anchor, for span-quote tests (ADR-0035).
+const SNAPSHOT_TEXT =
+  "Intro. A covered entity shall prepare a climate-related financial risk report. End.";
+const SPAN = {
+  start: SNAPSHOT_TEXT.indexOf("covered entity"),
+  end: SNAPSHOT_TEXT.indexOf("report.") + "report".length,
+};
+const QUOTE = SNAPSHOT_TEXT.slice(SPAN.start, SPAN.end);
+
+/** A span-level grounding fact pinned to `sha256:current`. */
+const spanFact = (obligationId: string) => ({
+  obligationId,
+  facts: [
+    {
+      sourceKey: "ca-sb261-2023",
+      sourceVersionId: "ver-2",
+      snapshotHash: "sha256:current",
+      retrievedAt: "2026-05-31",
+      span: SPAN,
+      method: "span" as const,
+      confidence: "high" as const,
+      recordedAt: "2026-06-03",
+    },
+  ],
+});
 
 const req = (path: string, query: Record<string, string> = {}) => ({
   path,
@@ -163,28 +190,27 @@ describe("serveRoute (ADR-0013, ADR-0002)", () => {
   });
 });
 
-describe("/grounding (ADR-0028)", () => {
-  it("returns the current grounding for every grounded obligation", async () => {
-    const r = await serveRoute(reader(), req("/api/grounding"));
+describe("/grounding (ADR-0028, ADR-0035)", () => {
+  it("returns the current document-level grounding, no span or quote, no snapshot read", async () => {
+    let reads = 0;
+    const r = await serveRoute(
+      reader({ readSnapshot: async (h) => (reads++, h) }),
+      req("/api/grounding"),
+    );
     expect(r.status).toBe(200);
     expect(r.body.route).toBe("grounding");
-    const groundings = r.body.groundings as Array<{
-      obligationId: string;
-      grounded: boolean;
-      confidence: string;
-      snapshotHash: string;
-      retrievedAt: string;
-    }>;
-    // Only SB 261 has a grounding fact → one entry, pinned to its latest snapshot.
-    expect(groundings).toEqual([
+    // Only SB 261 has a grounding fact (document-level) → one entry.
+    expect(r.body.groundings).toEqual([
       {
         obligationId: "ca-sb261-climate-risk-report",
         grounded: true,
+        method: "document",
         confidence: "high",
         snapshotHash: "sha256:current",
         retrievedAt: "2026-05-31",
       },
     ]);
+    expect(reads).toBe(0); // document grounding needs no snapshot read
   });
 
   it("returns an empty list when nothing is grounded", async () => {
@@ -194,6 +220,59 @@ describe("/grounding (ADR-0028)", () => {
     );
     expect(r.status).toBe(200);
     expect(r.body.groundings).toEqual([]);
+  });
+
+  it("slices the substantiating quote for a span-level grounding (ADR-0035)", async () => {
+    const r = await serveRoute(
+      reader({
+        groundingHistories: async () => [spanFact("ca-sb261-climate-risk-report")],
+        readSnapshot: async () => SNAPSHOT_TEXT,
+      }),
+      req("/api/grounding"),
+    );
+    expect(r.body.groundings).toEqual([
+      {
+        obligationId: "ca-sb261-climate-risk-report",
+        grounded: true,
+        method: "span",
+        confidence: "high",
+        snapshotHash: "sha256:current",
+        retrievedAt: "2026-05-31",
+        span: SPAN,
+        quote: QUOTE,
+      },
+    ]);
+  });
+
+  it("reads each distinct snapshot once when obligations share it", async () => {
+    let reads = 0;
+    const r = await serveRoute(
+      reader({
+        groundingHistories: async () => [
+          spanFact("ca-sb261-climate-risk-report"),
+          spanFact("ca-sb253-ghg-disclosure"), // same snapshotHash
+        ],
+        readSnapshot: async () => (reads++, SNAPSHOT_TEXT),
+      }),
+      req("/api/grounding"),
+    );
+    expect((r.body.groundings as unknown[]).length).toBe(2);
+    expect(reads).toBe(1); // deduped by content hash
+  });
+
+  it("serves the grounding without a quote when the snapshot read fails", async () => {
+    const r = await serveRoute(
+      reader({
+        groundingHistories: async () => [spanFact("ca-sb261-climate-risk-report")],
+        readSnapshot: async () => {
+          throw new Error("s3 down");
+        },
+      }),
+      req("/api/grounding"),
+    );
+    const [row] = r.body.groundings as Array<Record<string, unknown>>;
+    expect(row).toMatchObject({ method: "span", span: SPAN });
+    expect(row).not.toHaveProperty("quote");
   });
 });
 

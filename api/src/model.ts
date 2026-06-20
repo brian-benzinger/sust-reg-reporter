@@ -71,4 +71,9 @@ export interface CorpusReader {
    * resolves the current grounding from these to derive the served provenance.
    */
   groundingHistories(): Promise<ObligationGroundingHistory[]>;
+  /**
+   * The text of an immutable snapshot by content hash (ADR-0011), for slicing a
+   * span-level grounding's substantiating quote (ADR-0035).
+   */
+  readSnapshot(contentHash: string): Promise<string>;
 }
